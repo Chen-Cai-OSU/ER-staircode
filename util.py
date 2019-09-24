@@ -1,144 +1,100 @@
-import numpy as np
 import matplotlib.pyplot as plt
-import random
-from sklearn.neighbors.kde import KernelDensity
+import numpy as np
 import sys
-import networkx as nx
-import scipy
-from Esme.helper.time import timefunction
-import seaborn as sns
-
-
-def pd_from_cycle(n = 100, center = (0, 0)):
-    pds = []
-    for i in range(n):
-        length = np.sqrt(np.random.uniform(0.9, 1))
-        angle = np.pi * np.random.uniform(0, 2)
-        x = length * np.cos(angle)
-        y = length * np.sin(angle)
-        pds.append([x + center[0], y + center[1]])
-    pd = np.array(pds)
-    return pd
-
-def viz_pd(pts, show=False, color=None):
+def get_left_epsilon(stair, sigma = -1):
     """
-    :param pts: np.array of shape (n, 2)
-    :return:
+    :param stair: is a list of tupe of form (sigma, epsilon)
+    :return: from all left(smaller) epsion, get the the rightmost(largest)
     """
-    cmap = sns.cubehelix_palette(as_cmap=True)
-    if color is None: color = np.random.rand(1, pts.shape[0])
-    color = color.reshape((pts.shape[0],))
+    assert type(stair) == list
 
-    f, ax = plt.subplots()
-    points = ax.scatter(x=pts[:, 0], y=pts[:, 1], s=5, c = list(color))
-    f.colorbar(points)
-    if show: plt.show()
+    if len(stair) == 0:
+        return None, -1
+    else: # todo can be improved
+        eps, sigs = [], []
+        for (sig, ep) in stair:
+            if sig < sigma:
+                eps.append(ep)
+                sigs.append(sig)
+        if len(eps) == 0: # all points are on the right
+            return None, -1
+        else:
+            return sigs[eps.index(min(eps))], min(eps)
 
-def ambient_noise(x_range = (0, 1), y_range = (0,1), n = 100):
-    coords = [[random.uniform(x_range[0], x_range[1]), random.uniform(y_range[0], y_range[1])] for _ in range(n)]
-    return np.array(coords)
+def get_previous_epsilon(stair):
+    assert type(stair) == list
 
-def density(data):
+    if len(stair) == 0:
+        return None
+    else:
+        return stair[-1][1]
+
+def viz_stair(stair, plot=False):
     """
-    :param data: np.array of shape (n, d)
-    :return: density for each point
+    :param stair: a list of tuple of form (sigma, epsilon)
+    :param plot: if True, convert to new_stair and visualize
+    :return: if plot False, return new stair
     """
-    # X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
-    kde = KernelDensity(kernel='gaussian', bandwidth=0.5).fit(data)
-    return kde.score_samples(data)
 
-def ex():
-    # https://stackoverflow.com/questions/39735147/how-to-color-matplotlib-scatterplot-using-a-continuous-value-seaborn-color
-    import numpy as np
-    import seaborn as sns
-    import matplotlib.pyplot as plt
+    for i in range(1, len(stair)):
+        assert stair[i][0] >= stair[i-1][0]
+        assert stair[i][1] <= stair[i][1]
+    new_stair = []
 
-    x, y, z = np.random.rand(3, 100)
-    cmap = sns.cubehelix_palette(as_cmap=True)
+    new_stair.append(stair[0])
+    for i in range( len(stair)):
+        new_stair.append(stair[i])
+        if i+1 < len(stair) and stair[i+1][1] < stair[i][1]:
+            new_pt = (stair[i+1][0], stair[i][1])
+            new_stair.append(new_pt)
 
-    f, ax = plt.subplots()
-    points = ax.scatter(x, y, c=z, s=50)
-    f.colorbar(points)
+    if plot == True:
+        new_stair = np.array(new_stair)
+        plt.plot(new_stair[:,0], new_stair[:,1], 'b-')
+        plt.show()
+    else:
+        return new_stair
+
+def viz_stairs(stairs):
+    # stairs = []
+    # stair1 = [(1, 2), (3, 1.7), (4, 1.5), (10, 0.9)]
+    # stair2 = [(1, 3.1), (3, 2.3), (4.7, 1), (11, 0.8)]
+    # stairs.append(stair1)
+    # stairs.append(stair2)
+
+    for i in range(len(stairs)):
+        stairs[i] = np.array(viz_stair(stairs[i], plot=False))
+
+    for i in range(len(stairs)):
+        plt.plot(stairs[i][:,0], stairs[i][:,1], 'b-')
+
     plt.show()
-
-@timefunction
-def p(points, f, x1, x2):
-    """
-    :param points: array of shape (n, d)
-    :param f: array of shape (n, 1)
-    :param x1: idx
-    :param x2: idx
-    :return: (sigma, epsilon)
-    """
-    assert f.shape[1] == 1
-
-    sigma = max(f[x1][0], f[x2][0])
-    # points = np.random.random((100,3))
-    distm = scipy.spatial.distance.pdist(points)
-    distm = scipy.spatial.distance.squareform(distm)
-    n = points.shape[0]
-
-    filter_m = np.outer([f < sigma + 1e-6], [f < sigma + 1e-6]) # todo: viz filter_m should be square
-    val = np.multiply(distm, filter_m)
-    edgelist = np.argwhere(val > 0) # np.array of shape (_, 2)
-    val = val[val> 0]
-
-    n_ = edgelist.shape[0]
-    assert edgelist.shape[0] == val.shape[0]
-    edgelist = np.concatenate((edgelist, val.reshape((n_,1))), axis=1) # array of shape (_, 3)
-    assert edgelist.shape[1] == 3
-
-    # format data for nx
-    lines = []
-    for i in range(n_):
-        s, t, weight = edgelist[i][0], edgelist[i][1], edgelist[i][2]
-        line = f"{int(s)} {int(t)}" + ' {' + f"'weight':{float(weight)}" + '}'
-        lines.append(line)
-
-    G = nx.parse_edgelist(lines, nodetype=int)
-    # list(G)
-    # list(G.edges(data=True))
-    mst = nx.minimum_spanning_tree(G)
-    # x1, x2 = 1, 10
-    path = nx.shortest_path(mst, x1, x2, weight='weight') # [1, 70, 78, 13, 10]
-    path_length_lis = [mst[path[i]][path[i+1]]['weight'] for i in range(len(path)-1)]
-    epsion = 0 if len(path_length_lis) == 0 else max(path_length_lis)
-
-    return sigma, epsion
-
-from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
-parser = ArgumentParser("scoring", formatter_class=ArgumentDefaultsHelpFormatter, conflict_handler='resolve')
-parser.add_argument("--idx", default=1, type=int, help='point index') # (1515, 500) (3026,)
-parser.add_argument("--n", default=30, type=int, help='point index') # (1515, 500) (3026,)
 
 
 if __name__ == '__main__':
-    # ex()
-    # sys.exit()
-    args = parser.parse_args()
+    viz_stairs()
+    sys.exit()
+    stair = [(1,2),(3,1.7), (4,1.5),(10,0.9)]
+    stair_2 = [(1,3.1),(3,2.3), (4.7,1),(11,0.8)]
 
-    points_1 = pd_from_cycle(n = args.n, center=(0,0))
-    points_2 = pd_from_cycle(n = args.n, center=(5, 0))
-    noise = ambient_noise(x_range=(-1,6), y_range=(-1,1))
+    stair = viz_stair(stair, plot=False)
+    print(stair)
+    # stair_2 = viz_stair(stair_2, plot=False)
+    plt.plot(np.array(stair)[:,0], np.array(stair)[:,1], 'b-')
+    # plt.plot(np.array(stair_2)[:, 0], np.array(stair_2)[:, 1], 'r-')
 
-    points = np.concatenate((points_1, points_2, noise))
-    print(points.shape)
-    density_score_ = density(points).reshape(len(points),1)
-    density_score = density(points).reshape(len(points),)
-
-    stair_case = []
-    for i in range(args.n):
-        sigma, epsilon = p(points, density_score_, args.idx, i)
-        stair_case.append([sigma, epsilon])
-    stair_case = np.array(stair_case)
-    print(stair_case)
-
-    f, ax = plt.subplots()
-    ax.scatter(x = stair_case[:,0], y = stair_case[:,1])
-    ax.set_xlabel('sigma')
-    ax.set_ylabel('epsilon')
-    ax.set_title(f'Staircase for index {args.idx}')
     plt.show()
+    sys.exit()
 
-    print(density_score.shape)
-    viz_pd(points, show=True, color=density_score)
+    sig, epsilon = get_left_epsilon(stair, sigma=3.5)
+    print(sig) # 3
+    assert epsilon == 1.7
+
+    sigma, epsilon = get_left_epsilon(stair, sigma=4.5)
+    print(sigma) # 4
+    assert epsilon == 1.5
+
+    sigma, epsilon = get_left_epsilon(stair, sigma=10.5)
+    print(sigma)# 10
+    assert epsilon == 0.9
+
