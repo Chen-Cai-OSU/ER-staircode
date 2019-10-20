@@ -289,6 +289,8 @@ parser = ArgumentParser("scoring", formatter_class=ArgumentDefaultsHelpFormatter
 parser.add_argument("--n", default=1600, type=int, help='num of points') # (1515, 500) (3026,)
 parser.add_argument("--n_jobs", default=-1, type=int, help='num of jobs') # (1515, 500) (3026,)
 parser.add_argument("--re", action='store_true', help='recompute subgraphs') # (1515, 500) (3026,)
+parser.add_argument("--re", action='store_true', help='efficiently computing all msts') # (1515, 500) (3026,)
+
 
 def set_dir():
     dir = os.path.join(os.path.dirname(__file__), '..', 'subgraphs')
@@ -342,6 +344,8 @@ if __name__ == '__main__':
 
         for k in subgraphs_.keys():
             print(f'sigma is {pf(k,2)} and num of edges is {len(subgraphs[k].edges())}/{len(subgraphs_[k].edges())}.')
+
+
 
     # for sigma in sigmas[-10:]:
     #     D_x_slice(f, f_sort, idx_sort, sigma, print_=False)
