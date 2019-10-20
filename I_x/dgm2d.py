@@ -14,9 +14,12 @@ from I_x.I_x_slice import set_graph
 from I_x.mst_test import get_ultra_matrix
 from helper.time import precision_format as pf
 from helper.time import timefunction
+from I_x.blank import msts
+from I_x.mst_speedup import mst_total_lengh
 
 TOR = 1e-6
 EPSILON_DEFAULT = 0
+BACKEND = 'multiprocessing'
 np.random.random(42)
 
 def g_info(g):
@@ -97,6 +100,12 @@ def get_subgraph(f, sigma, distm, print_=False):
     return G
 
 def load_subgraph(sigma, sigmas, print_ = False):
+    """
+    :param sigma:
+    :param sigmas:
+    :param print_:  for debug
+    :return: return a nx graph where nodes are below sigma
+    """
     t0 = time()
     idx = sigmas.index(sigma)
 
@@ -152,7 +161,7 @@ def subslice(d, f_sort, f, idx_sort, mst, sigma):
     return stairs_slice
 
 # @profile
-def D_x_slice(f, f_sort, idx_sort, sigma, print_=False):
+def D_x_slice(f, f_sort, idx_sort, sigma, print_=False, mst_opt = False, verbose = 1, **kwargs):
     """
     :param f: array of shape (n, 1)
     :param distm: dist matrix of shape (n, n)
@@ -166,14 +175,21 @@ def D_x_slice(f, f_sort, idx_sort, sigma, print_=False):
     t0 = time()
     n = f.shape[0]
     idx = sigmas.index(sigma)
-    G = load_subgraph(sigma, sigmas, print_=False)
 
-    t1 = time()
-    if print_: print(f'get_subgraph takes {pf(t1-t0,2)}')
+    if mst_opt == False:
+        G = load_subgraph(sigma, sigmas, print_=False)
+        t1 = time()
+        if print_: print(f'get_subgraph takes {pf(t1-t0,2)}')
+        mst = nx.minimum_spanning_tree(G, weight='weight')
+        # mst_total_lengh(mst)
+        # mst_total_lengh(msts_list[idx])
+    else:
+        assert 'msts_list' in globals().keys()
+        t1 = time()
+        mst = msts_list[idx]
 
-    mst = nx.minimum_spanning_tree(G, weight='weight')
     t2 = time()
-    if print_: print(f'mst takes {pf(t2-t1,2)})')
+    if print_: print(f'mst takes {pf(t2 - t1, 2)})')
 
     d = get_ultra_matrix(mst, n = n, fast=True)
     t3 = time()
@@ -183,7 +199,10 @@ def D_x_slice(f, f_sort, idx_sort, sigma, print_=False):
     t4 = time()
     if print_: print(f'subslice matrix takes {pf(t4-t3, 2)}')
 
-    print(f' {idx}: 1) get_subgraph {pf(t1-t0,2)} 2) mst {pf(t2-t1,2)} '
+    if verbose == 0:
+        print('.', end='')
+    else:
+        print(f' {idx}: 1) get_subgraph {pf(t1-t0,2)} 2) mst {pf(t2-t1,2)} '
           f'3) ultra matrix {pf(t3-t2,2)} 4) subslice {pf(t4-t3,2)}')
 
     return stairs_slice
@@ -267,7 +286,6 @@ def dgm_format(dgm, filter = False):
         res = list(stairs.values())
     return res
 
-
 def dc_pickle(a):
     return pickle.loads(pickle.dumps(a, -1))
 
@@ -286,8 +304,8 @@ def get_idxsort(f, f_sort):
 
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 parser = ArgumentParser("scoring", formatter_class=ArgumentDefaultsHelpFormatter, conflict_handler='resolve')
-parser.add_argument("--n", default=1600, type=int, help='num of points') # (1515, 500) (3026,)
-parser.add_argument("--n_jobs", default=-1, type=int, help='num of jobs') # (1515, 500) (3026,)
+parser.add_argument("--n", default=100, type=int, help='num of points') # (1515, 500) (3026,)
+parser.add_argument("--n_jobs", default=1, type=int, help='num of jobs') # (1515, 500) (3026,)
 parser.add_argument("--re", action='store_true', help='recompute subgraphs') # (1515, 500) (3026,)
 parser.add_argument("--re", action='store_true', help='efficiently computing all msts') # (1515, 500) (3026,)
 
@@ -298,6 +316,7 @@ def set_dir():
     make_dir(dir)
 
 if __name__ == '__main__':
+    np.random.seed(42)
     set_dir()
     args = parser.parse_args()
     n = args.n # 2000
@@ -310,7 +329,7 @@ if __name__ == '__main__':
     sigmas = f.reshape(n,).tolist()
     sigmas.sort()
 
-    f_sort = copy.deepcopy(f).reshape((n,)).tolist() # # f_sort is a global variable
+    f_sort = copy.deepcopy(f).reshape((n,)).tolist() # f_sort is a global variable
     f_sort.sort()
     idx_sort = get_idxsort(f, f_sort)
 
@@ -344,15 +363,29 @@ if __name__ == '__main__':
 
         for k in subgraphs_.keys():
             print(f'sigma is {pf(k,2)} and num of edges is {len(subgraphs[k].edges())}/{len(subgraphs_[k].edges())}.')
-
-
+        print('-'*150)
 
     # for sigma in sigmas[-10:]:
     #     D_x_slice(f, f_sort, idx_sort, sigma, print_=False)
     # sys.exit()
     # stairs = Parallel(n_jobs=-1, backend='multiprocessing')(delayed(D_x_slice_clean)(f, f_sort, idx_sort, sigma) for sigma in sigmas[-120:])
-    stairs = Parallel(n_jobs=args.n_jobs, backend='multiprocessing')(delayed(D_x_slice)(f, f_sort, idx_sort, sigma, print_=False) for sigma in sigmas[1:])
-    # print(stairs)
+
+    g = get_subgraph(f, sigmas[-1], distm)
+    # g = g.to_undirected()
+    # g.remove_edges_from(g.selfloop_edges())
+
+    msts_list = msts(g, f, distm, print_=False, check=False)
+
+    stairs0 = Parallel(n_jobs=args.n_jobs, backend=BACKEND)(delayed(D_x_slice)(f, f_sort, idx_sort, sigma, mst_opt = True, print_=False) for sigma in sigmas[-20:])
+    stairs0 = stairs0[0]
+    print('-'*150)
+
+    stairs = Parallel(n_jobs=args.n_jobs, backend=BACKEND)(delayed(D_x_slice)(f, f_sort, idx_sort, sigma, print_=False) for sigma in sigmas[-20:])
+    stairs = stairs[0]
+
+    for k, v in stairs0.items():
+        if v != stairs.get(k, None):
+            print(k, v, stairs.get(k, None))
 
 
 
