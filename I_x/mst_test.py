@@ -4,6 +4,12 @@ import numpy as np
 from helper.time import timefunction
 from helper.format import precision_format as pf
 from profilehooks import profile
+from I_x.cython_test import get_iter_fast
+from I_x.bfs_faster import bfs_faster2
+from joblib import delayed, Parallel
+from bfs_fast import  bfs_fast_complied, bfs_fast_complied2, bfs_fast_complied3, bfs_fast_complied4, bfs_fast_complied5, bfs_fast_complied6
+from gt.nx_gt_conv import nx2gt
+import graph_tool.all as gt
 
 np.random.random(42)
 import networkx as nx
@@ -205,21 +211,56 @@ def bfs_fast(g, source, dummy= False):
 
     return ultrametric_dict
 
-from joblib import delayed, Parallel
-from bfs_fast import  bfs_fast_complied, bfs_fast_complied2, bfs_fast_complied3, bfs_fast_complied4, bfs_fast_complied5, bfs_fast_complied6
 
-def get_ultra_matrix(g, n = 100, fast=True):
+def get_ultra_matrix(g, n = 100, fast=True, faster = False):
     """
-    :param g: nx tree! with weight attribute for each edge
+    :param g: nx tree(s)! with weight attribute for each edge
     :param n: number of nodes
     :param fast: True by default
     :return: ultra_metrix matrix of shape (n, n)
     """
     assert nx.is_tree(g)
+
     ultra_matrix = np.zeros((n, n)) - 12345
     nodes = g.nodes()
 
     attr_dict = nx.get_edge_attributes(g, 'weight')
+
+    if faster:
+        # ultra_matrix = np.zeros((n, n))
+        attr_arr = np.zeros((n, n))
+        for k, v in attr_dict.items():
+            attr_arr[k[0]][k[1]] = v
+        # ultra_matrix2 = np.zeros((n, n)) - 12345
+        g = nx2gt(g, print_=True)
+        for source in nodes:
+            iter_array2 = gt.bfs_iterator(g, source, array=True)
+            iter_array2 = iter_array2.astype('int')
+            # print(iter_array2.shape)
+            # sys.exit()
+            ultra_array2 = bfs_faster2(attr_arr, iter_array2, n)
+            ultra_matrix[source,:] = ultra_array2
+
+            # visited = [source]
+            # ultrametric_dict = {source: 0}
+            # ultrametric_dict, _ = bfs(g, source, ultrametric_dict, visited)
+            # for k, v in ultrametric_dict.items():
+            #     ultra_matrix2[int(source)][int(k)] = v
+
+            # print(ultra_matrix[source] - ultra_matrix2[int(source)])
+            # print('-'*50)
+
+        # for i in range(n):
+        #     try:
+        #         assert ultra_matrix[i,:] == ultra_matrix2[i, :]
+        #     except:
+        #         pass
+
+        assert (ultra_matrix == ultra_matrix.T).all()
+        ultra_matrix += 1e5 * np.eye(n)
+        print(np.average(ultra_matrix))
+        return ultra_matrix
+
 
     if fast:
         for source in nodes:
@@ -244,9 +285,6 @@ def get_ultra_matrix(g, n = 100, fast=True):
             # t1 = time.time()
             for k, v in ultrametric_dict.items():
                 ultra_matrix[source, int(k)] = v
-            # t2 = time.time()
-            # print(f'compute ultrametrix_dict takes {pf((t1 - t0)/(t2-t1), 3)} time.')
-
     else:
         for source in nodes:
             visited = [source]
@@ -257,6 +295,7 @@ def get_ultra_matrix(g, n = 100, fast=True):
 
     assert (ultra_matrix == ultra_matrix.T).all()
     ultra_matrix += 1e5 * np.eye(n)
+    print(np.average(ultra_matrix))
     return ultra_matrix
 
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
@@ -284,11 +323,23 @@ if __name__ == '__main__':
 
     import copy
     np.random.seed(42)
-    # g = nx.random_tree(1000, seed=42)
-    g = nx.random_geometric_graph(1000, 0.5)
+    g = nx.random_tree(1500, seed=42)
+    # g = nx.random_geometric_graph(1000, 0.5)
     remove_idx = 10
     for u, v in g.edges():
         g[u][v]['weight'] = np.random.random() # dist_(g.node[u]['pos'], g.node[v]['pos'])
+
+    t1 = time()
+    get_ultra_matrix(g, n=len(g), fast=True, faster=False)
+    t2 = time()
+    print(f'ori method takes {t2 - t1}')
+
+    t1 = time()
+    get_ultra_matrix(g, n=len(g), fast=True, faster=True)
+    t2 = time()
+    print(f'faster method takes {t2 - t1}')
+
+    sys.exit()
 
     t1 = time()
     mst_total_lengh(nx.minimum_spanning_tree(g, weight='weight'))
@@ -305,6 +356,8 @@ if __name__ == '__main__':
     mst_total_lengh(nx.minimum_spanning_tree(mst, weight='weight'))
     t2 = time()
     print(f'modified method takes {t2-t1}')
+
+
     sys.exit()
 
 

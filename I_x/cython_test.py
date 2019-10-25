@@ -93,7 +93,7 @@ def get_iter_fast(g, source):
 
 if __name__ == '__main__':
     np.random.seed(42)
-    n =  2000
+    n =  500 #1000
     n_iter = n
     G = nx.random_tree(n, seed=42) # nx.random_geometric_graph(100, 0.1)
     assert nx.is_connected(G)
@@ -113,22 +113,30 @@ if __name__ == '__main__':
         attr_arr[k[0]][k[1]] = v
 
     t1 = time()
+    ultra_array__ = np.zeros((n, n)) + 1  # - 12345
     for source in range(n_iter):
         ultra_dict = bfs_fast_python(G, source)
         ultra_array_ = [0] * len(ultra_dict)
         for k, v in ultra_dict.items():
             ultra_array_[k] = v
+        # print(ultra_dict)
 
-        iter_array2, _ = get_iter_fast(G, source)
-        ultra_array2 = bfs_faster2(attr_arr, iter_array2, n)
-        assert (ultra_array_ == ultra_array2).all()
+        iter = nx.bfs_successors(G, source)
+        iter = list(iter)
+        ultrametric_dict = bfs_fast_complied3(attr_dict, source, iter)
+        # print(ultrametric_dict)
+        assert ultrametric_dict == ultra_dict
+        # print('-'*20)
+
+        for k, v in ultrametric_dict.items():
+            ultra_array__[int(source), int(k)] = v
 
     t2 = time()
-    print('*'*150)
-    sys.exit()
+    # sys.exit('*'*150)
 
 
     t1_, t2_ = 0, 0
+    ultra_matrix = np.zeros((n, n)) - 12345
     for source in range(n_iter):
         # iter_array1, _ = get_iter(G, source, print_ = False, nx_flag = True)
         # iter_array2, _ = get_iter(G, source, print_ = False, nx_flag = False)
@@ -139,6 +147,7 @@ if __name__ == '__main__':
 
         # ultra_array1 = bfs_faster(attr_arr, iter_array1, n) #todo: array1 has some bugs
         ultra_array2 = bfs_faster2(attr_arr, iter_array2, n)
+        ultra_matrix[source,:] = ultra_array2
 
         # print(ultra_array2)
         # try:
@@ -152,7 +161,8 @@ if __name__ == '__main__':
 
         t1_ += (_t2 -_t1)
         t2_ += (_t3 -_t2)
-
+    assert (ultra_matrix == ultra_matrix.T).all()
+    assert (ultra_array__ == ultra_matrix).all()
     sys.exit(f'python/bfs_faster takes {(pf(t2 - t1, 3))}/{(pf(t1_, 3))}+{(pf(t2_, 3))}')
 
 
