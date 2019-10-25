@@ -191,7 +191,7 @@ def D_x_slice(f, f_sort, idx_sort, sigma, print_=False, mst_opt = False, verbose
     t2 = time()
     if print_: print(f'mst takes {pf(t2 - t1, 2)})')
 
-    d = get_ultra_matrix(mst, n = n, fast=True)
+    d = get_ultra_matrix(mst, n = n, fast=True, faster=False)
     t3 = time()
     if print_: print(f'ultra matrix takes {pf(t3-t2,2)}. {pf((t3-t2)/(t2-t1), 2)} times of mst')
 
@@ -237,7 +237,7 @@ def D_x_slice(f, f_sort, idx_sort, sigma, print_=False, mst_opt = False, verbose
     #
     #     assert min(d_sub[indices_below.index(x_)]) == epsilon
 
-def D_x_slice_clean(f, f_sort, idx_sort, sigma, sigmas):
+def D_x_slice_clean(f, f_sort, idx_sort, sigma, sigmas, mst_opt = False):
     """
     :param f: array of shape (n, 1)
     :param distm: dist matrix of shape (n, n)
@@ -249,11 +249,12 @@ def D_x_slice_clean(f, f_sort, idx_sort, sigma, sigmas):
     # assert 'sigmas' in globals()
 
     n = f.shape[0]
-
-    G = load_subgraph(sigma, sigmas, print_=False)
-    print('.',end='')
-
-    mst = nx.minimum_spanning_tree(G, weight='weight')
+    if mst_opt:
+        idx = sigmas.index(sigma)
+        mst = msts_list[idx]
+    else:
+        G = load_subgraph(sigma, sigmas, print_=False)
+        mst = nx.minimum_spanning_tree(G, weight='weight')
 
     d = get_ultra_matrix(mst, n = n, fast=True)
 
@@ -322,7 +323,7 @@ if __name__ == '__main__':
     n = args.n # 2000
 
     f = np.random.random((n, 1))
-    f[10] = 0.1
+    f[3] = 0.1
     distm = np.random.random((n, n))
     distm = distm + distm.T
 
@@ -371,14 +372,13 @@ if __name__ == '__main__':
     # stairs = Parallel(n_jobs=-1, backend='multiprocessing')(delayed(D_x_slice_clean)(f, f_sort, idx_sort, sigma) for sigma in sigmas[-120:])
 
     g = get_subgraph(f, sigmas[-1], distm)
-    # g = g.to_undirected()
-    # g.remove_edges_from(g.selfloop_edges())
 
     msts_list = msts(g, f, distm, print_=False, check=False)
 
-    stairs0 = Parallel(n_jobs=args.n_jobs, backend=BACKEND)(delayed(D_x_slice)(f, f_sort, idx_sort, sigma, mst_opt = True, print_=False) for sigma in sigmas[-20:])
+    stairs0 = Parallel(n_jobs=args.n_jobs, backend=BACKEND)(delayed(D_x_slice)(f, f_sort, idx_sort, sigma, mst_opt = True, print_=False) for sigma in sigmas[-8:])
     stairs0 = stairs0[0]
     print('-'*150)
+    sys.exit()
 
     stairs = Parallel(n_jobs=args.n_jobs, backend=BACKEND)(delayed(D_x_slice)(f, f_sort, idx_sort, sigma, print_=False) for sigma in sigmas[-20:])
     stairs = stairs[0]
