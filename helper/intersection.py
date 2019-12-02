@@ -29,10 +29,10 @@ class staircase():
         self.segs.append(seg)
 
     def add_augseg(self, augseg):
+        """ add augmented segment """
         seg = augseg[:2]
         self._check_direction(seg)
         self.aug_segs.append(augseg)
-
 
     def build_segs_from_juncs(self, juncs, verbose=0):
         """
@@ -41,15 +41,6 @@ class staircase():
         """
 
         juncs.sort(key=lambda x: x[0])
-
-        # left_most_seg = ((juncs[0][0], 0),juncs[0])
-        # bottom_seg = ((juncs[0][0], 0), (self.exd, 0)) # todo handle bottom_seg better
-        # self.addseg(left_most_seg) # add leftmost seg
-        # self.addseg(bottom_seg)
-        # self.add_augseg(left_most_seg + (self.null_data,))
-        # self.add_augseg(bottom_seg + (self.null_data,))
-
-
         if verbose>0: print(f'juncs is {juncs}')
         filter_juncs = [juncs[0]]
 
@@ -79,8 +70,17 @@ class staircase():
             aug_seg = self._check_seg_rep(aug_seg, aug=True)
             self.add_augseg(aug_seg)
 
+        left_most_seg = ((juncs[0][0], 0),juncs[0])
+        bottom_seg = ((juncs[0][0], 0), (self.exd, 0))
+        self.default_segs = [left_most_seg, bottom_seg] # check this two segs seprately
+
+        # self.addseg(left_most_seg) # add leftmost seg
+        # self.addseg(bottom_seg)
+        # self.add_augseg(left_most_seg + (self.null_data,))
+        # self.add_augseg(bottom_seg + (self.null_data,))
 
     def _check_direction(self, seg):
+        """ check seg to be horizonal or vertical """
         p1, p2 = seg[:2]
         if p1[1] == p2[1]:
             return 'hor'
@@ -90,7 +90,7 @@ class staircase():
             sys.exit(f'Seg {seg} has to be either horizonal or vertical.')
 
     def _check_right_bottom(self, p1, p2):
-        # check if p2 is right bottom to p1
+        """ check if p2 is right bottom to p1 """
         p1_x ,p1_y = p1
         p2_x, p2_y = p2
         if p2_x>= p1_x and p2_y <= p1_y:
@@ -137,6 +137,7 @@ class staircase():
         print(f'sorted segs is {sorted_segs}')
 
     def check_augseg(self, augseg):
+        """ check if a seg is augmented or not """
         if len(augseg) == 3 and type(augseg[2]) is dict:
             return True
         else:
@@ -187,6 +188,7 @@ class staircase():
                     sys.exit('Unconsidered Case')
 
     def addline(self, l):
+        """ add a line. for plotting """
         a, b = l
         def my_formula(x):
             return a * x + b
@@ -203,13 +205,22 @@ class staircase():
         assert seg2_bottommost <= seg1_bottommost, f'seg2 {self._rep_seg(seg2)} not at bottom to seg1 {self._rep_seg(seg1)} '
 
     def _check_segs_ordered(self, segs):
+        """ check segs are ordered (staircase from left to right, top to bottom)"""
         n = len(segs)
         for i in range(n-1):
             seg1, seg2 = segs[i], segs[i+1]
             self._check_twosegs(seg1, seg2)
         print('pass segs order test')
 
+    def _find_default_intersect(self, l):
+        """ test intersection with two default segs with line l """
+        segs = self.default_segs # haven't added aug version
+        for seg in segs:
+            self._check_intersect(l, seg, verbose=1)
+
     def find_intersect(self, l, aug=False):
+        """ brute force search """
+        self._find_default_intersect(l)
         self.addline(l)
         segs = self.aug_segs if aug else self.segs
 
@@ -218,13 +229,14 @@ class staircase():
             if self._check_intersect(l, seg, verbose=1) == True:
                 print(f'Intersect at seg index {segs.index(seg)}')
         print(f'line search takes {time()-t0}')
-        print('-'*20)
 
     def find_intersect_binary(self, l, aug = False, verbose = 0):
+        """ binary search """
+        self._find_default_intersect(l)
         self.addline(l)
         segs = self.aug_segs if aug else self.segs
 
-        # todo implelemt binary
+        # todo implelemt binary. Done.
         self._check_segs_ordered(segs)
         t0 = time()
         left, right = 0, len(segs)-1
@@ -243,8 +255,6 @@ class staircase():
             if verbose: print(f'left is {left} mid is {mid} right is {right}')
         print(f'Intersect at seg index {mid}')
         print(f'binary search takes {time() - t0}. ')
-
-
 
     def plot_segs(self):
         # https://stackoverflow.com/questions/21352580/matplotlib-plotting-numerous-disconnected-line-segments-with-different-colors
