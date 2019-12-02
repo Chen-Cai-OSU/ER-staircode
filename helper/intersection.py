@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import collections  as mc
 from functools import cmp_to_key
+from time import time
 np.random.seed(42)
 
 def graph(formula, x_range):
@@ -15,8 +16,10 @@ def graph(formula, x_range):
 class staircase():
     def __init__(self):
         self.segs = []
+        self.aug_segs = []
         self.exd = 10 # extend the rightmost point. Ideally should be infinity
         self.line = None
+        self.null_data = {'killer': 'null'}
 
     def addseg(self, seg):
         """
@@ -24,6 +27,11 @@ class staircase():
         """
         self._check_direction(seg)
         self.segs.append(seg)
+
+    def add_augseg(self, augseg):
+        seg = augseg[:2]
+        self._check_direction(seg)
+        self.aug_segs.append(augseg)
 
 
     def build_segs_from_juncs(self, juncs, verbose=0):
@@ -33,7 +41,15 @@ class staircase():
         """
 
         juncs.sort(key=lambda x: x[0])
-        self.addseg(((juncs[0][0], 0),juncs[0]))
+
+        # left_most_seg = ((juncs[0][0], 0),juncs[0])
+        # bottom_seg = ((juncs[0][0], 0), (self.exd, 0)) # todo handle bottom_seg better
+        # self.addseg(left_most_seg) # add leftmost seg
+        # self.addseg(bottom_seg)
+        # self.add_augseg(left_most_seg + (self.null_data,))
+        # self.add_augseg(bottom_seg + (self.null_data,))
+
+
         if verbose>0: print(f'juncs is {juncs}')
         filter_juncs = [juncs[0]]
 
@@ -55,12 +71,17 @@ class staircase():
         for i in range(n-1):
             p, q = filter_juncs[i], filter_juncs[i+1]
             seg = (p, q)
+            aug_seg = (p, q, {'killer': np.random.randint(n)})
+
             seg = self._check_seg_rep(seg)
             self.addseg(seg)
 
+            aug_seg = self._check_seg_rep(aug_seg, aug=True)
+            self.add_augseg(aug_seg)
+
 
     def _check_direction(self, seg):
-        p1, p2 = seg
+        p1, p2 = seg[:2]
         if p1[1] == p2[1]:
             return 'hor'
         elif p1[0] == p2[0]:
@@ -85,23 +106,24 @@ class staircase():
         return f'({pf(pt[0], 2)}, {pf(pt[1], 2)})'
 
     def _rep_seg(self, seg):
-        p1, p2 = seg
+        p1, p2 = seg[:2]
         return self._rep_pt(p1) + self._rep_pt(p2)
 
-    def _check_seg_rep(self, seg):
+    def _check_seg_rep(self, seg, aug=False):
         """
         reverse the order of two ends of seg, reverse if there is error
         :param seg:
         :return:
         """
         self._check_direction(seg)
-        p1, p2 = seg
+        p1, p2 = seg[:2]
+        if aug: data = seg[2]
         if p2[0] >= p1[0]:
-            seg = (p2, p1)
+            seg = (p2, p1) if not aug else (p2, p1, data)
 
-        p1, p2 = seg
+        p1, p2 = seg[:2]
         if p2[1] <= p1[1]:
-            seg = (p2, p1)
+            seg = (p2, p1) if not aug else (p2, p1, data)
         return seg
 
     def _cmp_seg(self, s1, s2):
@@ -114,6 +136,11 @@ class staircase():
         print(f'original segs is {self.segs}')
         print(f'sorted segs is {sorted_segs}')
 
+    def check_augseg(self, augseg):
+        if len(augseg) == 3 and type(augseg[2]) is dict:
+            return True
+        else:
+            return False
 
     def _check_intersect(self, l, seg, verbose = 0):
         """
@@ -122,16 +149,21 @@ class staircase():
         :param seg: (p1, p2) where both p1 and p2 are 2d tuple where p2[x]>=p1[x]
         :return: ture or false
         """
-        p1, p2 = seg
-        assert p2[0] >= p1[0], 'Order of two ends of segment needs to be reversed.'
-        assert p2[1] >= p1[1], 'Order of two ends of segment needs to be reversed.'
+        if self.check_augseg(seg):
+            p1, p2, data = seg
+        else:
+            p1, p2 = seg
+            data = 'null'
+
+        assert p2[0] >= p1[0], f'Order of two ends of segment {self._rep_seg(seg)} needs to be reversed.'
+        assert p2[1] >= p1[1], f'Order of two ends of segment {self._rep_seg(seg)} needs to be reversed.'
         x1, y1 = p1[0], p1[1]
         x2, y2 = p2[0], p2[1]
         a, b = l[0], l[1]
         if self._check_direction(seg) == 'hor':
             if a * x1 + b <= y1 and a * x2 + b >= y2:
                 intersect_pt = ((y1-b)/float(a), y1)
-                if verbose > 0: print(f'line {self._rep_line(l)} instersects with horizonal seg {self._rep_seg(seg)} at {self._rep_pt(intersect_pt)}')
+                if verbose > 0: print(f'line {self._rep_line(l)} instersects with horizonal seg {self._rep_seg(seg)} at {self._rep_pt(intersect_pt)}. data is {data}')
                 return True
             else:
                 if a * x1 + b > y1 and a * x2 + b > y2:
@@ -144,7 +176,7 @@ class staircase():
         else: # 'ver'
             if a * x1 + b >= y1 and a * x2 + b <= y2:
                 intersect_pt = (x1, a*x1+b)
-                if verbose > 0: print(f'line {self._rep_line(l)} instersects with vertical seg {self._rep_seg(seg)} at {self._rep_pt(intersect_pt)}')
+                if verbose > 0: print(f'line {self._rep_line(l)} instersects with vertical seg {self._rep_seg(seg)} at {self._rep_pt(intersect_pt)}. data is {data}')
                 return True
             else:
                 if a * x1 + b > y1 and a * x2 + b > y2:
@@ -160,14 +192,57 @@ class staircase():
             return a * x + b
         self.line = my_formula
 
-    def _check_segs_ordered(self):
-        pass
+    def _check_twosegs(self, seg1, seg2):
+        """ assert seg2 is larger(right bottom) to seg1 """
+        seg1, seg2 = seg1[:2], seg2[:2]
+        seg1_rightmost = max(seg1[0][0], seg1[1][0])
+        seg1_bottommost = min(seg1[0][1], seg1[1][1])
+        seg2_rightmost = max(seg2[0][0], seg2[1][0])
+        seg2_bottommost = min(seg2[0][1], seg2[1][1])
+        assert seg2_rightmost >= seg1_rightmost, f'seg2 {self._rep_seg(seg2)} not at right to seg1 {self._rep_seg(seg1)} '
+        assert seg2_bottommost <= seg1_bottommost, f'seg2 {self._rep_seg(seg2)} not at bottom to seg1 {self._rep_seg(seg1)} '
 
-    def find_instersect(self, l):
+    def _check_segs_ordered(self, segs):
+        n = len(segs)
+        for i in range(n-1):
+            seg1, seg2 = segs[i], segs[i+1]
+            self._check_twosegs(seg1, seg2)
+        print('pass segs order test')
+
+    def find_intersect(self, l, aug=False):
         self.addline(l)
+        segs = self.aug_segs if aug else self.segs
 
-        for seg in self.segs: # todo: implement binary search here
-            self._check_intersect(l, seg, verbose=1)
+        t0 = time()
+        for seg in segs:
+            if self._check_intersect(l, seg, verbose=1) == True:
+                print(f'Intersect at seg index {segs.index(seg)}')
+        print(f'line search takes {time()-t0}')
+        print('-'*20)
+
+    def find_intersect_binary(self, l, aug = False, verbose = 0):
+        self.addline(l)
+        segs = self.aug_segs if aug else self.segs
+
+        # todo implelemt binary
+        self._check_segs_ordered(segs)
+        t0 = time()
+        left, right = 0, len(segs)-1
+        mid = (left + right)//2
+        assert self._check_intersect(l, segs[left]) == 'low'
+        assert self._check_intersect(l, segs[right]) == 'high'
+
+        while self._check_intersect(l, segs[mid]) != True:
+            if verbose: print(f'right now the line intersects with seg {mid} is {self._check_intersect(l, segs[mid])}')
+            if self._check_intersect(l, segs[mid]) == 'low':
+                left = mid
+                mid = (left + right)//2
+            else:
+                right = mid
+                mid = (left + right) // 2
+            if verbose: print(f'left is {left} mid is {mid} right is {right}')
+        print(f'Intersect at seg index {mid}')
+        print(f'binary search takes {time() - t0}. ')
 
 
 
@@ -214,13 +289,22 @@ if __name__ == '__main__':
     args = parser.parse_args()
     n = args.n
 
-    for i in range(2):
+    for i in range(1):
         print(i)
         s = staircase()
-        juncs = gen_juncs(100, seed=i)
-        juncs = [(0, 10),(1,9),(3,5), (2,8)]
+        juncs = gen_juncs(100000, seed=i)
+        # juncs = [(0, 10),(1,9),(3,5), (2,8)]
         s.build_segs_from_juncs(juncs)
         # s.sort_segs()
-        s.find_instersect((args.line_a, args.line_b))
-        s.plot_segs()
+
+        for k in range(10):
+            np.random.seed(k)
+            a = 1.01
+            b = np.random.random() * (-1e5)
+            print(k,a,b)
+            s.find_intersect((a, b), aug=False)
+            s.find_intersect_binary((a, b), aug=False)
+            print()
+
+        # s.plot_segs()
 
