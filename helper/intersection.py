@@ -6,6 +6,7 @@ from matplotlib import collections  as mc
 from functools import cmp_to_key
 from time import time
 np.random.seed(42)
+EXT = 10
 
 def graph(formula, x_range):
     x = np.array(x_range)
@@ -17,7 +18,7 @@ class staircase():
     def __init__(self):
         self.segs = []
         self.aug_segs = []
-        self.exd = 10 # extend the rightmost point. Ideally should be infinity
+        self.exd = EXT # extend the rightmost point. Ideally should be infinity
         self.line = None
         self.null_data = {'killer': 'null'}
 
@@ -58,7 +59,7 @@ class staircase():
         filter_juncs.append(last_pt)
         if verbose>0: print(filter_juncs)
         n = len(filter_juncs)
-        assert n>1, f'Cardinality of filtered Juncs is {n}'
+        assert n > 1, f'Cardinality of filtered Juncs is {n}'
         for i in range(n-1):
             p, q = filter_juncs[i], filter_juncs[i+1]
             seg = (p, q)
@@ -100,7 +101,7 @@ class staircase():
 
     def _rep_line(self, l):
         a, b = l
-        return f'y={a}*x+{b}'
+        return 'y={:4f}*x+{:4f}'.format(a, b)
 
     def _rep_pt(self, pt):
         return f'({pf(pt[0], 2)}, {pf(pt[1], 2)})'
@@ -150,6 +151,7 @@ class staircase():
         :param seg: (p1, p2) where both p1 and p2 are 2d tuple where p2[x]>=p1[x]
         :return: ture or false
         """
+
         if self.check_augseg(seg):
             p1, p2, data = seg
         else:
@@ -187,8 +189,8 @@ class staircase():
                 else:
                     sys.exit('Unconsidered Case')
 
-    def addline(self, l):
-        """ add a line. for plotting """
+    def setline(self, l):
+        """ set a line. for plotting """
         a, b = l
         def my_formula(x):
             return a * x + b
@@ -221,28 +223,32 @@ class staircase():
     def find_intersect(self, l, aug=False):
         """ brute force search """
         self._find_default_intersect(l)
-        self.addline(l)
+        self.setline(l)
         segs = self.aug_segs if aug else self.segs
 
         t0 = time()
         for seg in segs:
             if self._check_intersect(l, seg, verbose=1) == True:
-                print(f'Intersect at seg index {segs.index(seg)}')
+                print(f'Intersect at seg index {segs.index(seg)} {self._rep_seg(seg)}')
         print(f'line search takes {time()-t0}')
 
-    def find_intersect_binary(self, l, aug = False, verbose = 0):
+    def find_intersect_binary(self, l, aug = False, verbose = 0, check = True):
         """ binary search """
         self._find_default_intersect(l)
-        self.addline(l)
+        self.setline(l)
         segs = self.aug_segs if aug else self.segs
 
         # todo implelemt binary. Done.
-        self._check_segs_ordered(segs)
+        if check: self._check_segs_ordered(segs)
         t0 = time()
         left, right = 0, len(segs)-1
         mid = (left + right)//2
-        assert self._check_intersect(l, segs[left]) == 'low'
-        assert self._check_intersect(l, segs[right]) == 'high'
+        if self._check_intersect(l, segs[left]) != 'low':
+            print( f'no intersection with upper part for {self._rep_line(l)}. Line is above.')
+            return
+        if self._check_intersect(l, segs[right]) != 'high':
+            print(f'no intersection with upper part for {self._rep_line(l)}. Line is below.')
+            return
 
         while self._check_intersect(l, segs[mid]) != True:
             if verbose: print(f'right now the line intersects with seg {mid} is {self._check_intersect(l, segs[mid])}')
@@ -253,15 +259,17 @@ class staircase():
                 right = mid
                 mid = (left + right) // 2
             if verbose: print(f'left is {left} mid is {mid} right is {right}')
-        print(f'Intersect at seg index {mid}')
-        print(f'binary search takes {time() - t0}. ')
 
-    def plot_segs(self):
+        # print(f'Intersect at seg index {mid} {self._rep_seg(segs[mid])}')
+        print('binary search takes {:.3f}.'.format(time() - t0))
+
+    def plot_segs(self, static = False):
         # https://stackoverflow.com/questions/21352580/matplotlib-plotting-numerous-disconnected-line-segments-with-different-colors
         new_segs = []
-        for seg in self.segs:
+        for seg in self.segs + self.default_segs:
             new_seg = [seg[0], seg[1]]
             new_segs.append(new_seg)
+        if static: return new_segs, self.line
             # segs = [[(0, 1), (1, 1)], [(2, 3), (3, 3)], [(1, 2), (1, 3)]]
 
         lc = mc.LineCollection(new_segs, linewidths=1)
@@ -275,8 +283,11 @@ class staircase():
 
         plt.show()
 
+
 def gen_juncs(n=10, seed=42):
-    """ generate junction(type-1) points """
+    """ generate junction(type-1) points
+        return a list of 2-tuples
+    """
     np.random.seed(seed)
     p = (0, 20)
     juncs = [p]
@@ -286,8 +297,6 @@ def gen_juncs(n=10, seed=42):
         juncs.append(p)
     return juncs
 
-
-import fire
 
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
 parser = ArgumentParser("scoring", formatter_class=ArgumentDefaultsHelpFormatter, conflict_handler='resolve')
@@ -307,14 +316,14 @@ if __name__ == '__main__':
         s.build_segs_from_juncs(juncs)
         # s.sort_segs()
 
-        for k in range(10):
+        for k in range(3):
             np.random.seed(k)
             a = 1.01
             b = np.random.random() * (-1e5)
-            print(k,a,b)
+            print(f'{k}: line y = {a} * x + {b}')
             s.find_intersect((a, b), aug=False)
             s.find_intersect_binary((a, b), aug=False)
             print()
 
-        # s.plot_segs()
+        s.plot_segs()
 
