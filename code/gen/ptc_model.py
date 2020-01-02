@@ -1,14 +1,38 @@
 import random
-import numpy as np
-import scipy
-from scipy.spatial.distance import pdist, squareform
-from viz import viz_pd
 import sys
+
 import matplotlib.pyplot as plt
-from sklearn import cluster, datasets, mixture
+import numpy as np
 import pandas as pd
+import seaborn as sns
+from scipy.spatial.distance import pdist, squareform
+from sklearn import datasets
 
 
+def viz_pd(pts, show=False, color=None, annotate=None, inter = False):
+    """
+    :param pts: np.array of shape (n, 2)
+    :param show:
+    :param color:
+    :param annotate: point idx for annotation
+    :return:
+    """
+    if annotate is list:
+        for idx in annotate: assert idx <= pts.shape[0]
+
+    cmap = sns.cubehelix_palette(as_cmap=True)
+    if color is None: color = np.random.rand(1, pts.shape[0])
+    color = color.reshape((pts.shape[0],))
+
+    f, ax = plt.subplots()
+    points = ax.scatter(x=pts[:, 0], y=pts[:, 1], s=5, c = list(color))
+    f.colorbar(points)
+
+    if annotate is not None:
+        for idx in annotate:
+            ax.text(pts[idx,0] + 0.1, pts[idx,1] + 0.1, idx, fontsize=9)
+
+    if show: plt.show()
 def pd_from_cycle(n = 100, center = (0, 0)):
     np.random.seed(42)
     random.seed(42)

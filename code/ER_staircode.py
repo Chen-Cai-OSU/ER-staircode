@@ -8,11 +8,21 @@ from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
 from joblib import Parallel, delayed
 from code.gen.ptc_model import toy_dataset, woojin2
-from code.gen.example import density
 import matplotlib.pyplot as plt
+from sklearn.neighbors.kde import KernelDensity
 
 BACKEND = 'multiprocessing'
 linkage_kwargs = {'distance_threshold': 0, 'n_clusters': None, 'linkage': 'single'}
+
+def density(data, bw=0.5):
+    """
+    Gaussian kernel density estimation
+    :param data: np.array of shape (n, d)
+    :return: density for each point
+    """
+    # X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
+    kde = KernelDensity(kernel='gaussian', bandwidth=bw).fit(data)
+    return kde.score_samples(data)
 
 def slice_dgm_(model, pts, f, viz = False, **kwargs):
     """
