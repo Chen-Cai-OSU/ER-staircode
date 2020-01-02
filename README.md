@@ -1,10 +1,4 @@
 # Elder-rule-staircodes for augmented metric spaces
 
+![](/Users/admin/Documents/osu/Research/clustering/abstract.png)
 
-An augmented metric space $(X, d_X, f_X)$ is a metric space $(X, d_X)$ equipped with a function $f_X: X \to \mathbb{R}$. It arises commonly in practice, e.g, a point cloud $X$ in $\mathbb{R}^d$ where each point $x\in X$ has a density function value $f_X(x)$ associated to it. Another example is where $X$ is the vertex set of a graph $G$, $d_X$ represents a certain graph-induced metric on $X$, and $f_X$ is a descriptor function (e.g, discrete Ricci curvature) at vertices of graphs.
-Such an augmented metric space naturally gives rise to a 2-parameter filtration (by filtering both via $f_X$ and via distance $d_X$).
-However, it is known that the resulting 2-parameter persistence module could still be of wild representation type, and may not have simple indecomposables.
-
-In this paper, motivated by the ``elder-rule'' for the zeroth homology of a 1-parameter filtration, we propose a barcode-like summary, called the \emph{elder-rule-staircode}, as a way to encode the zeroth homology of the 2-parameter filtration induced by a finite augmented metric space. Specifically, given a finite $(X, d_X, f_X)$, its elder-rule-staircode consists of $n = |X|$ number of simple staircase-like blocks in the plane of descriptive complexity $O(n)$.
-Interestingly, we show that the new elder-rule-staircode encodes much topological information of the 2-parameter filtration induce by $(X, d_X, f_X)$. In particular, we show that the fibered barcode, the fibered merge tree, and the graded Betti numbers associated to the zeroth homology of the 2-parameter filtration induced by $(X, d_X, f_X)$ can be efficiently computed once the elder-rule-staircode is given. Furthermore, for certain special cases, it turns out that this staircode corresponds exactly to the set of indecomposables of the zeroth order 2-parameter persistence module induced by $(X, d_X, f_X)$.
-Finally, we develop an efficient algorithm to compute the elder-rule-staircode in $O(n^2\log n)$ time, which can be improved to $O(n^2\alpha(n))$ if $X$ is from a fixed dimensional Euclidean space $\mathbb{R}^d$, where $\alpha(n)$ is the inverse Ackermann function. We also provide a software for users to explore and retrieve information such as fibered barcodes interactively.
