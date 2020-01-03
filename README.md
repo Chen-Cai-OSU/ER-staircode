@@ -4,11 +4,23 @@
 
 ![](./abstract.png)
 
-* To run the code
+### Install
+* Install all the requirements
 
 ``
-python ER/ER_staircode.py --full # computes ER_staircode
-python ER/gui.py  # launch a simple gui for interactive visualization
+pip install --user --requirement requirements.txt
+``
+* computes ER_staircode
+
+``
+python ER/ER_staircode.py --full 
 ``
 
-* Submit a issue or contact me via cai.507@osu.edu
+* launch a simple gui for interactive visualization
+
+``
+python ER/gui.py  
+``
+
+### Contact 
+* If you have any questions, submit a issue on github or contact me via cai.507@osu.edu
