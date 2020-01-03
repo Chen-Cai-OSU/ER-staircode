@@ -5,18 +5,30 @@
 ![](./abstract.png)
 
 ### Install
-* Install all the requirements
+* download the code with:
+
+``
+git clone git@github.com:Chen-Cai-OSU/ER-staircode.git
+``
+
+* move to the directory:
+
+``
+cd ER-staircode
+``
+
+* Install all the requirements:
 
 ``
 pip install --user --requirement requirements.txt
 ``
-* computes ER_staircode
+* computes ER_staircode and save it for visualization:
 
 ``
 python ER/ER_staircode.py --full 
 ``
 
-* launch a simple gui for interactive visualization
+* launch a simple gui for interactive visualization:
 
 ``
 python ER/gui.py  
