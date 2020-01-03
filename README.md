@@ -7,7 +7,7 @@
 * To run the code
 
 ``
-python ER/ER_staircode.py # computes ER_staircode
+python ER/ER_staircode.py --full # computes ER_staircode
 python ER/gui.py  # launch a simple gui for interactive visualization
 ``
 
