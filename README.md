@@ -28,7 +28,7 @@ pip install --user --requirement requirements.txt
 python ER/ER_staircode.py --full 
 ``
 
-* launch a simple gui for interactive visualization:
+* launch a simple gui (graphical user interfaces) for interactive visualization:
 
 ``
 python ER/gui.py  
