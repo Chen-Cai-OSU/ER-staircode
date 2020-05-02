@@ -9,7 +9,7 @@ from scipy.spatial.distance import pdist, squareform
 from sklearn import datasets
 
 
-def viz_pd(pts, show=False, color=None, annotate=None, inter = False):
+def viz_pd(pts, show=False, color=None, annotate=None, inter=False):
     """
     :param pts: np.array of shape (n, 2)
     :param show:
@@ -25,15 +25,17 @@ def viz_pd(pts, show=False, color=None, annotate=None, inter = False):
     color = color.reshape((pts.shape[0],))
 
     f, ax = plt.subplots()
-    points = ax.scatter(x=pts[:, 0], y=pts[:, 1], s=5, c = list(color))
+    points = ax.scatter(x=pts[:, 0], y=pts[:, 1], s=5, c=list(color))
     f.colorbar(points)
 
     if annotate is not None:
         for idx in annotate:
-            ax.text(pts[idx,0] + 0.1, pts[idx,1] + 0.1, idx, fontsize=9)
+            ax.text(pts[idx, 0] + 0.1, pts[idx, 1] + 0.1, idx, fontsize=9)
 
     if show: plt.show()
-def pd_from_cycle(n = 100, center = (0, 0)):
+
+
+def pd_from_cycle(n=100, center=(0, 0)):
     np.random.seed(42)
     random.seed(42)
     pds = []
@@ -46,6 +48,7 @@ def pd_from_cycle(n = 100, center = (0, 0)):
     pd = np.array(pds)
     return pd
 
+
 def pts2pd(pts, color):
     # used for interactive plot
     assert pts.shape[1] == 2
@@ -53,11 +56,13 @@ def pts2pd(pts, color):
     pd_frame = pd.DataFrame(data={'label': color, 'x': x, 'y': y, 'idx': range(pts.shape[0])})
     return pd_frame
 
-def ambient_noise(x_range = (0, 1), y_range = (0,1), n = 100):
+
+def ambient_noise(x_range=(0, 1), y_range=(0, 1), n=100):
     coords = [[random.uniform(x_range[0], x_range[1]), random.uniform(y_range[0], y_range[1])] for _ in range(n)]
     return np.array(coords)
 
-def two_cycle(n = 20):
+
+def two_cycle(n=20):
     """ generate two cycles of size n and noise of n """
     points_1 = pd_from_cycle(n=n, center=(0, 0))
     points_2 = pd_from_cycle(n=n, center=(5, 0))
@@ -69,13 +74,15 @@ def two_cycle(n = 20):
 
     return points, distm
 
-def uniform2d(n = 100):
-    points = np.random.random((n,2))
+
+def uniform2d(n=100):
+    points = np.random.random((n, 2))
     distm = pdist(points)
     distm = squareform(distm)
     return points, distm
 
-def point_online(uniform = True):
+
+def point_online(uniform=True):
     if uniform:
         xrange = np.linspace(0, 1, 11)
     else:
@@ -90,11 +97,12 @@ def point_online(uniform = True):
     distm = squareform(distm)
     return points, distm
 
+
 def pts2distm(pts, metric='euclidean'):
     if metric == 'random':
         np.random.seed(42)
         n = pts.shape[0]
-        distm = np.random.random((n,n))
+        distm = np.random.random((n, n))
         distm = (distm + distm.T) * 0.5
         distm -= np.diag(distm.diagonal())
         return distm
@@ -103,7 +111,8 @@ def pts2distm(pts, metric='euclidean'):
     distm = squareform(distm)
     return distm
 
-def modelnet(idx = 100):
+
+def modelnet(idx=100):
     """
     :param idx:
     :return: idx-th modelnet 10 pointclouds
@@ -122,6 +131,7 @@ def modelnet(idx = 100):
 
     return data, labels[idx], distm
 
+
 def woojin():
     x1 = (0, 0)
     x2 = (0, 3)
@@ -139,7 +149,8 @@ def woojin():
 
     return data, color, distm, f
 
-def woojin2(switch = False):
+
+def woojin2(switch=False):
     x1 = (0, 0)
     x2 = (0, 1.5)
     x3 = (2, 1.5)
@@ -158,6 +169,7 @@ def woojin2(switch = False):
 
     return data, color, distm, f
 
+
 def woojin3():
     # example for check with I_x with revet
     x1 = (0, 0)
@@ -168,7 +180,7 @@ def woojin3():
 
     data = np.array(pts)
     f = np.array([0, 1, 2, 3]).reshape(len(pts), 1)
-    color = ['b']*4
+    color = ['b'] * 4
 
     distm = pdist(data)
     distm = squareform(distm)
@@ -176,11 +188,11 @@ def woojin3():
     return data, color, distm, f
 
 
-def pts_on_square(add_noise = False, n_noise=5):
+def pts_on_square(add_noise=False, n_noise=5):
     pts = []
-    for theta in np.linspace(0, 2*np.pi, 200):
+    for theta in np.linspace(0, 2 * np.pi, 200):
         pts.append((np.cos(theta), np.sin(theta)))
-    noise = ambient_noise(x_range=(-1,1), y_range=(-1,1), n=n_noise)
+    noise = ambient_noise(x_range=(-1, 1), y_range=(-1, 1), n=n_noise)
     if add_noise: pts = np.concatenate((pts, noise))
 
     distm = pdist(pts)
@@ -188,16 +200,29 @@ def pts_on_square(add_noise = False, n_noise=5):
 
     return np.array(pts), distm
 
+
 def color_map(n):
     if n == 0: return 'b'
     if n == 1: return 'r'
     if n == -1: return 'y'
     if n == 2: return 'g'
 
-def toy_dataset(n_sample = 200, name = 'blob', seed = 42, pd = False, metric='euclidean', scale = 1, **kwargs):
 
+def toy_dataset(n_sample=200, name='blob', seed=42, pd=False, metric='euclidean', scale=1, **kwargs):
+    """
+
+    :param n_sample:
+    :param name:
+    :param seed:
+    :param pd:
+    :param metric:
+    :param scale:
+    :param kwargs:
+    :return: np.array of shape (n, d),  color, pairwise distance matrix
+    """
     if name == 'circle':
-        pts, color = datasets.make_circles(n_samples=n_sample, factor=.5, noise=.05, random_state=seed) # both pts and color are array
+        pts, color = datasets.make_circles(n_samples=n_sample, factor=.5, noise=.05,
+                                           random_state=seed)  # both pts and color are array
     elif name == 'moon':
         pts, color = datasets.make_moons(n_samples=n_sample, noise=.05, random_state=seed)
     elif name == 'blob':
@@ -209,7 +234,7 @@ def toy_dataset(n_sample = 200, name = 'blob', seed = 42, pd = False, metric='eu
     elif name == 'digits':
         digits = datasets.load_digits()
         pts, color = digits.images, digits.target
-        pts = pts.reshape(1797,64)
+        pts = pts.reshape(1797, 64)
         sample_idx = np.random.randint(0, 1797, 200)
         pts, color = pts[sample_idx, :], color[sample_idx]
     elif name == 'test':
@@ -227,10 +252,10 @@ def toy_dataset(n_sample = 200, name = 'blob', seed = 42, pd = False, metric='eu
     distm = pts2distm(pts, metric=metric)
     pts, distm = pts * scale, distm * scale
 
-
     return np.array(pts), color, distm
 
-def uniform_noise(xrange = (0, 1), yrange = (0, 1), size = 100):
+
+def uniform_noise(xrange=(0, 1), yrange=(0, 1), size=100):
     """
     uniform 2d noise
     :param xrange:
@@ -238,16 +263,15 @@ def uniform_noise(xrange = (0, 1), yrange = (0, 1), size = 100):
     :param size: num of noisy points
     :return:
     """
-    x = np.random.uniform(low = xrange[0], high=xrange[1], size=(size, 1))
-    y = np.random.uniform(low = yrange[0], high=yrange[1], size=(size, 1))
-    pts = np.concatenate((x,y), axis=1)
+    x = np.random.uniform(low=xrange[0], high=xrange[1], size=(size, 1))
+    y = np.random.uniform(low=yrange[0], high=yrange[1], size=(size, 1))
+    pts = np.concatenate((x, y), axis=1)
     color = ['grey'] * size
     return pts, color
 
 
-def non_uniform(n = 100, noise = False, d = 2):
-
-    mean = np.array(range(1, d+1))
+def non_uniform(n=100, noise=False, d=2):
+    mean = np.array(range(1, d + 1))
     cov = np.identity(d) * 0.01
     pts1 = np.random.multivariate_normal(mean, cov, n)
 
@@ -258,7 +282,7 @@ def non_uniform(n = 100, noise = False, d = 2):
     noise_pts = []
     if noise:
         for i in np.linspace(-1.1, 1.1, 30):
-            noise_pts.append((i, 2*i))
+            noise_pts.append((i, 2 * i))
         noise_pts = np.array(noise_pts)
         pts = np.concatenate((pts1, pts2, noise_pts), axis=0)
         color = ['red'] * n + ['blue'] * n + ['grey'] * 30
@@ -273,7 +297,7 @@ def non_uniform(n = 100, noise = False, d = 2):
 
 
 if __name__ == '__main__':
-    pts, _ = uniform_noise(size = 1000)
+    pts, _ = uniform_noise(size=1000)
     viz_pd(pts, show=True)
     sys.exit()
 
@@ -285,14 +309,13 @@ if __name__ == '__main__':
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
-    ax.scatter(points[:,0], points[:,1], points[:,2])
+    ax.scatter(points[:, 0], points[:, 1], points[:, 2])
     ax.set_xlabel('X Label')
     ax.set_ylabel('Y Label')
     ax.set_zlabel('Z Label')
 
     plt.show()
     sys.exit()
-
 
     points, distm = uniform(5000)
     viz_pd(points, show=True)
