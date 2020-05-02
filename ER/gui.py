@@ -1,13 +1,14 @@
 import pickle
 from pprint import pprint
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import collections  as mc
 from matplotlib.widgets import Slider  # import the Slider widget
-from ER.intersection import EXT
-from ER.intersection import staircase, gen_juncs
 
-slider_margin = .1 # multiplication
+from ER.intersection import EXT, staircase
+
+slider_margin = .1  # multiplication
 margin = .1
 xmin = 100
 xmax = -100
@@ -15,6 +16,7 @@ ymin = 100
 ymax = -100
 
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+
 parser = ArgumentParser("scoring", formatter_class=ArgumentDefaultsHelpFormatter, conflict_handler='resolve')
 parser.add_argument("--a", default=1.01, type=float, help='y=ax+b')
 parser.add_argument("--b", default=1, type=float, help='y=ax+b')
@@ -23,11 +25,13 @@ parser.add_argument("--log", action='store_true')
 
 parser.add_argument("--intersect", default=1, type=float, help='y=ax+b')
 
+
 def ext(x, margin):
     if x > 0:
         return x * (1 + margin)
     else:
         return x * (1 - margin)
+
 
 def shrink(x, margin):
     if x > 0:
@@ -40,21 +44,21 @@ if __name__ == '__main__':
     args = parser.parse_args()
     stairs = []
     with open("./I_x.pkl", "rb") as f:
-        I_x= pickle.load(f)
+        I_x = pickle.load(f)
     n_stair = len(I_x)
 
     all_segs = []
     for k in range(10):
         s = staircase()
         key = list(I_x.keys())[k]
-        juncs = list(I_x[key].items()) # gen_juncs(10, seed=0) # list(I_x) gen_juncs(100000, seed=0)
+        juncs = list(I_x[key].items())  # gen_juncs(10, seed=0) # list(I_x) gen_juncs(100000, seed=0)
         juncs = sorted(juncs, key=lambda x: x[0])
         pprint(juncs)
-        s.build_segs_from_juncs(juncs) # juncs = [(0, 10),(1,9),(3,5), (2,8)]
+        s.build_segs_from_juncs(juncs)  # juncs = [(0, 10),(1,9),(3,5), (2,8)]
 
         np.random.seed(k)
         a = 1.01
-        b = args.b # np.random.random() * (-1e5)
+        b = args.b  # np.random.random() * (-1e5)
         print(f'{k}: line y = {a} * x + {b}')
         # s.find_intersect((a, b), aug=False)
         # s.find_intersect_binary((a, b), aug=False)
@@ -81,14 +85,13 @@ if __name__ == '__main__':
     a_min, a_max = shrink(a_init, slider_margin), ext(a_init, slider_margin)
     b_min, b_max = shrink(b_init, slider_margin), ext(b_init, slider_margin)
 
-
     slider_a_ax = plt.axes([0.1, 0.03, 0.8, 0.03])
     slider_b_ax = plt.axes([0.1, 0.00, 0.8, 0.03])
 
     ax.set_title('y = a * x + b')
     x = np.linspace(min(0, shrink(xmin, margin)), ext(xmax, margin), 500)
-    ax.set_xlim(min(0, shrink(xmin, margin)), ext(xmax, margin)+EXT)
-    ax.set_ylim(min(b_init-2, shrink(ymin, margin)), ext(ymax, margin))
+    ax.set_xlim(min(0, shrink(xmin, margin)), ext(xmax, margin) + EXT)
+    ax.set_ylim(min(b_init - 2, shrink(ymin, margin)), ext(ymax, margin))
 
     if args.log:
         ax.set_xscale('log')
@@ -96,7 +99,8 @@ if __name__ == '__main__':
 
     line_plot, = ax.plot(x, a_init * x + b_init, 'r')
     a_slider = Slider(slider_a_ax, 'a', a_min, a_max, valinit=a_init)
-    b_slider = Slider(slider_b_ax, 'b', b_min, b_max,valinit=b_init)
+    b_slider = Slider(slider_b_ax, 'b', b_min, b_max, valinit=b_init)
+
 
     # Next we define a function that will be executed each time the value indicated by the slider changes. The variable of this function will be assigned the value of the slider.
     def update_a(a):
@@ -105,16 +109,18 @@ if __name__ == '__main__':
             s.find_intersect_binary((a, b_slider.val), aug=False, check=False, verbose=0)
             print()
         print('-' * 100)
-        fig.canvas.draw_idle() # redraw the plot
+        fig.canvas.draw_idle()  # redraw the plot
+
 
     def update_b(b):
-        line_plot.set_ydata(a_slider.val* x + b)
+        line_plot.set_ydata(a_slider.val * x + b)
         # s.find_intersect_binary((a_slider.val, b), aug=False, check=False)
         for s in stairs:
             s.find_intersect_binary((a_slider.val, b), aug=False, check=False, verbose=0)
             print()
         print('-' * 100)
         fig.canvas.draw_idle()
+
 
     # viz one staircase
     for new_segs in all_segs:

@@ -68,7 +68,7 @@ def slice_dgm_(model, pts, f, viz=False, **kwargs):
         # dict_i['conquered'] = tmp_max
         dict_i['conquered_pt'] = tuple(pts[tmp_max, :]) # kill/conquer the point with larger value
         dict_i['not_conquered'] = tmp_min               # the point with smaller value is not conquered yet
-        dict_i['height'] = model.distances_[i]          #
+        dict_i['height'] = model.distances_[i]          # important: i instead of i_. model distances_ is an array of shape (n_child,)
 
         decoration[i_] = dict_i
 
@@ -98,7 +98,7 @@ def slice_dgm2(i):
     return decoration
 
 
-def assemble(stairs, f):
+def assemble(stairs, f, verbose = False):
     """
     :param stairs: a list of dict of form
   0: {'not_conquered': 0, 'type': 'leaf'},
@@ -121,6 +121,8 @@ def assemble(stairs, f):
     :param f: a sorted array of shape (n, 1)
 
     :return: I_x: a dict of form
+            KEY is the coordinates of each point
+            VALUE is a dict (I_xi) where key is indice and value is function value
     {(0.0, 1.5): {2: 1.5, 3: 1.5, 4: 1.0, 5: 0.5},
      (0.5, 1.5): {3: 0.5, 4: 0.5, 5: 0.5},
      (1.0, 1.5): {4: 0.5, 5: 0.5},
@@ -143,20 +145,26 @@ def assemble(stairs, f):
                 if idx not in I_x.keys(): I_x[idx] = {}
                 I_x[idx][sigma] = v_['height']
 
-    if args.verbose: pprint.pprint(I_x)
+    if verbose: pprint.pprint(I_x)
     return I_x
 
 
-def plot_Ix(I_x):
+def plot_Ix(I_x, key=None):
     # I1 = I_x[1]
-    random_key = list(I_x.keys())[0]
-    I1 = I_x[random_key]
+
+    if key == None:
+        key = list(I_x.keys())[0]
+    I1 = I_x[key]
     pts = []
     for k, v in I1.items():
         pts.append([k, v])
     pts = np.array(pts)
-    plt.scatter(pts[:, 0], pts[:, 1])
-    plt.title(f'I_{random_key}')
+
+
+    plt.scatter(pts[:, 0], pts[:, 1], s=3)
+    plt.fill_between(pts[:, 0], pts[:, 1], step="post", alpha=1, color='blue', edgecolor='blue')
+
+    plt.title(f'I_{key}')
     plt.show()
 
 
@@ -199,25 +207,17 @@ if __name__ == '__main__':
 
     # generate 2d point clouds
     X_origin, _, _ = toy_dataset(n_sample=args.n, name=args.name)  # X_origin is of shape (n, 2)
-
     n_pt = X_origin.shape[0]
     f = - density(X_origin, bw=args.bw).reshape(n_pt, )
-    if args.verbose: print(f'X_origin + f = \n {np.concatenate((X_origin, f.reshape((n_pt, 1))), axis=1)}')
 
     # sort by function value
     f_inds = f.argsort()
     X = X_origin[f_inds]
     f = f[f_inds]
 
-    if args.verbose:
-        print(f'After sorting: X + f = \n {np.concatenate((X, f.reshape((n_pt, 1))), axis=1)}')
-        print('-' * 100)
-
     if args.parallel:
         bs = 'auto' if args.bs == -1 else args.bs
-        # datalist = [X[:i, :] for i in range(2, n_pt)]
         stairs = Parallel(n_jobs=args.n_jobs, backend=BACKEND)(delayed(slice_dgm2)(i) for i in range(2, n_pt + 1))
-        # pprint.pprint((stairs))
 
     elif args.full:
         stairs = []
@@ -228,7 +228,7 @@ if __name__ == '__main__':
             decoration = slice_dgm_(model, X_, f[:i])
             stairs.append(decoration)
     else:
-        sys.exit()
+        sys.exit('Exit.')
         # single slice of ER-staircode
         model = AgglomerativeClustering(**linkage_kwargs)
         model = model.fit(X)
