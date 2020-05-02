@@ -6,7 +6,10 @@ import numpy as np
 from matplotlib import collections  as mc
 from matplotlib.widgets import Slider  # import the Slider widget
 
-from ER.intersection import EXT, staircase
+try:
+    from ER.intersection import EXT, staircase
+except ModuleNotFoundError:
+    from .intersection import EXT, staircase
 
 slider_margin = .1  # multiplication
 margin = .1
