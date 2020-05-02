@@ -1,4 +1,4 @@
-# Elder-rule-staircodes for augmented metric spaces (Submitted to SOCG 2020)
+# Elder-rule-staircodes for augmented metric spaces (SOCG 2020)
 
 **Chen Cai, Woojin Kim, Facundo Memoli, Yusu Wang**
 
@@ -33,6 +33,9 @@ python ER/ER_staircode.py --full
 ``
 python ER/gui.py  
 ``
+
+### Tutorial
+Also see the short tutorial (tutorial.ipynb) on how to use the software for your own data.
 
 ### Contact 
 * If you have any questions, submit a issue on github or contact me via cai.507@osu.edu
