@@ -1,7 +1,7 @@
-from copy import deepcopy
 import pickle
 import pprint
 import sys
+from copy import deepcopy
 from time import time
 
 import matplotlib.pyplot as plt
@@ -16,6 +16,7 @@ from ER.helper.format import precision_format as pf
 BACKEND = 'multiprocessing'
 linkage_kwargs = {'distance_threshold': 0, 'n_clusters': None, 'linkage': 'single'}
 
+
 def density(data, bw=0.5):
     """
     Gaussian kernel density estimation
@@ -26,14 +27,26 @@ def density(data, bw=0.5):
     kde = KernelDensity(kernel='gaussian', bandwidth=bw).fit(data)
     return kde.score_samples(data)
 
-def slice_dgm_(model, pts, f, viz = False, **kwargs):
+
+def slice_dgm_(model, pts, f, viz=False, **kwargs):
     """
     :param model: AgglomerativeClustering model
     :param pts: np.array of shape (n, d)
     :param f: np.array of shape (n, )
     :param viz: visualize dendrogram
     :param kwargs: kwargs for viz
-    :return: a slice of ER-staircode that will be assembled later
+    :return: a vertical slice of ER-staircode that will be assembled later.
+            a dict of the following form (KEY: VALUE), where KEY is point_id/merge_point ()
+            and VALUE is of the following form
+
+      {'children': [0, 2],          # indices of point that are children of the current point
+      'conquered': 2,               # the index of point that is being conquered
+      'conquered_pt': (0.0, 1.5),   # what is this? # todo: the coordinates of conquered point
+      'height': 1.5,                # the height of the current point
+      'idx': 3,                     # the index of the current point
+      'not_conquered': 0,           # the pt id in the clustering tree that hasn't been conquered yet
+      'type': 'non_leaf'},          # whether the point stands for a leavf or not in the clustering tree
+
     """
 
     t0 = time()
@@ -44,22 +57,24 @@ def slice_dgm_(model, pts, f, viz = False, **kwargs):
         decoration[i] = {'type': 'leaf', 'not_conquered': i}
 
     for i, merge in enumerate(model.children_):
-        i_ = i + n_pts
+        i_ = i + n_pts # merge points
         # assert i_ not in decoration.keys(), f'key {i} already exists'
         dict_i = {}
-        c1, c2 = list(merge)
+        c1, c2 = list(merge) # children 1 and children 2
         dict_i['type'] = 'non_leaf'
-
         tmp1, tmp2 = decoration[c1]['not_conquered'], decoration[c2]['not_conquered']
-        (tmp_min, tmp_max) = (tmp1, tmp2) if f[tmp1] < f[tmp2] else (tmp2, tmp1)
+        (tmp_min, tmp_max) = (tmp1, tmp2) if f[tmp1] < f[tmp2] else (tmp2, tmp1) # tmp_min/tmp_max according to function value
 
         # dict_i['conquered'] = tmp_max
-        dict_i['conquered_pt'] = tuple(pts[tmp_max, :])
-        dict_i['not_conquered'] = tmp_min
-        dict_i['height'] = model.distances_[i]
+        dict_i['conquered_pt'] = tuple(pts[tmp_max, :]) # kill/conquer the point with larger value
+        dict_i['not_conquered'] = tmp_min               # the point with smaller value is not conquered yet
+        dict_i['height'] = model.distances_[i]          #
+
         decoration[i_] = dict_i
+
     # print(f'slice_dgm_ takes {time()-t0} for {len(model.children_)}')
     return decoration
+
 
 def slice_dgm(data, f):
     """ a wrapper """
@@ -68,8 +83,9 @@ def slice_dgm(data, f):
     decoration = slice_dgm_(model, data, f)
     return decoration
 
+
 def slice_dgm2(i):
-    """ a wrapper """
+    """ a wrapper of slice_dgm_ """
     assert 'X' in globals().keys()
     assert 'f' in globals().keys()
     global f
@@ -80,6 +96,7 @@ def slice_dgm2(i):
     model = model.fit(data_local)
     decoration = slice_dgm_(model, data_local, f_local)
     return decoration
+
 
 def assemble(stairs, f):
     """
@@ -102,7 +119,8 @@ def assemble(stairs, f):
       'not_conquered': 0,
       'type': 'non_leaf'}}
     :param f: a sorted array of shape (n, 1)
-    :return: a dict of form
+
+    :return: I_x: a dict of form
     {(0.0, 1.5): {2: 1.5, 3: 1.5, 4: 1.0, 5: 0.5},
      (0.5, 1.5): {3: 0.5, 4: 0.5, 5: 0.5},
      (1.0, 1.5): {4: 0.5, 5: 0.5},
@@ -110,7 +128,7 @@ def assemble(stairs, f):
      (2.0, 1.5): {1: 2.5, 2: 2.0, 3: 1.5, 4: 1.5, 5: 1.5}}
     """
 
-    assert len(stairs) == f.shape[0]-1, f'len of stairs is {len(stairs)}. shape of f is {f.shape}'
+    assert len(stairs) == f.shape[0] - 1, f'len of stairs is {len(stairs)}. shape of f is {f.shape}'
     f = f[1:].tolist()
     stairs = dict(zip(f, stairs))
     I_x = {}
@@ -120,13 +138,14 @@ def assemble(stairs, f):
         for v_ in v.values():
             if v_['type'] == 'leaf':
                 continue
-            else: # non-leaf case
-                idx = str(v_['conquered_pt']) # convert tuple to string for json.dump
+            else:  # non-leaf case
+                idx = str(v_['conquered_pt'])  # convert tuple to string for json.dump. idx is of form (0.0, 1.5).
                 if idx not in I_x.keys(): I_x[idx] = {}
                 I_x[idx][sigma] = v_['height']
 
     if args.verbose: pprint.pprint(I_x)
     return I_x
+
 
 def plot_Ix(I_x):
     # I1 = I_x[1]
@@ -140,12 +159,15 @@ def plot_Ix(I_x):
     plt.title(f'I_{random_key}')
     plt.show()
 
+
 def export(I_x):
+    """ export I_x """
     t0 = time()
     print('Finish Computing. Saving now...')
     with open('./I_x.pkl', 'wb') as f:
         pickle.dump(I_x, f)
-    print(f'Finish saving. Takes {pf(time()-t0, 2)}')
+    print(f'Finish saving. Takes {pf(time() - t0, 2)}')
+
     # import json
     # with open('./I_x.json', 'w') as f:
     #     json.dump(I_x, f)
@@ -157,7 +179,9 @@ def export(I_x):
     # pprint.pprint(I_x_reload)
     # assert I_x == I_x_reload
 
+
 from argparse import ArgumentDefaultsHelpFormatter, ArgumentParser
+
 parser = ArgumentParser("scoring", formatter_class=ArgumentDefaultsHelpFormatter, conflict_handler='resolve')
 parser.add_argument("--n", default=100, type=int, help='num of points')
 parser.add_argument("--n_jobs", default=-1, type=int, help='num of jobs')
@@ -172,30 +196,32 @@ parser.add_argument("--bs", default=-1, type=int, help='batch size')
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    X_origin, _, _ = toy_dataset(n_sample=args.n, name=args.name)  # [[-3, 3], [0, 0], [-4.5, 1.5], [1, 1], [0, -4]]
+
+    # generate 2d point clouds
+    X_origin, _, _ = toy_dataset(n_sample=args.n, name=args.name)  # X_origin is of shape (n, 2)
 
     n_pt = X_origin.shape[0]
     f = - density(X_origin, bw=args.bw).reshape(n_pt, )
     if args.verbose: print(f'X_origin + f = \n {np.concatenate((X_origin, f.reshape((n_pt, 1))), axis=1)}')
 
+    # sort by function value
     f_inds = f.argsort()
     X = X_origin[f_inds]
     f = f[f_inds]
 
     if args.verbose:
         print(f'After sorting: X + f = \n {np.concatenate((X, f.reshape((n_pt, 1))), axis=1)}')
-        print('-'*100)
+        print('-' * 100)
 
     if args.parallel:
         bs = 'auto' if args.bs == -1 else args.bs
         # datalist = [X[:i, :] for i in range(2, n_pt)]
-        stairs = Parallel(n_jobs=args.n_jobs, backend=BACKEND)(delayed(slice_dgm2)(i) for i in range(2, n_pt+1))
+        stairs = Parallel(n_jobs=args.n_jobs, backend=BACKEND)(delayed(slice_dgm2)(i) for i in range(2, n_pt + 1))
         # pprint.pprint((stairs))
-
 
     elif args.full:
         stairs = []
-        for i in range(2, n_pt+1):
+        for i in range(2, n_pt + 1):
             X_ = X[:i, :]
             model = AgglomerativeClustering(**linkage_kwargs)
             model = model.fit(X_)
@@ -209,10 +235,12 @@ if __name__ == '__main__':
         decoration = slice_dgm_(model, X, f)
         pprint.pprint((decoration))
 
-    if args.verbose: pprint.pprint(stairs)
+    if args.verbose:
+        pprint.pprint(stairs)
+
     I_x = assemble(stairs, f)
     export(I_x)
+
     if args.verbose:
         pprint.pprint(I_x)
         plot_Ix(I_x)
-
