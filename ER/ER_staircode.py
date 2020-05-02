@@ -10,8 +10,13 @@ from joblib import Parallel, delayed
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import KernelDensity
 
-from ER.gen.ptc_model import toy_dataset
-from ER.helper.format import precision_format as pf
+try:
+    from ER.gen.ptc_model import toy_dataset
+    from ER.helper.format import precision_format as pf
+except ModuleNotFoundError:
+    from gen.ptc_model import toy_dataset
+    from helper.format import precision_format as pf
+
 
 BACKEND = 'multiprocessing'
 linkage_kwargs = {'distance_threshold': 0, 'n_clusters': None, 'linkage': 'single'}
