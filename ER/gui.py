@@ -9,7 +9,7 @@ from matplotlib.widgets import Slider  # import the Slider widget
 try:
     from ER.intersection import EXT, staircase
 except ModuleNotFoundError:
-    from .intersection import EXT, staircase
+    from intersection import EXT, staircase
 
 slider_margin = .1  # multiplication
 margin = .1

@@ -1,5 +1,5 @@
 import sys
-from ER.helper.format import precision_format as pf
+from helper.format import precision_format as pf
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import collections  as mc
