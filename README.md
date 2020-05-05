@@ -5,6 +5,7 @@
 ![](./abstract.png)
 
 ### Install
+The code is tested for python=3.6.7. 
 * download the code with:
 
 ``
