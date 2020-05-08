@@ -92,9 +92,10 @@ if __name__ == '__main__':
     slider_b_ax = plt.axes([0.1, 0.00, 0.8, 0.03])
 
     ax.set_title('y = a * x + b')
+
     x = np.linspace(min(0, shrink(xmin, margin)), ext(xmax, margin), 500)
     ax.set_xlim(min(0, shrink(xmin, margin)), ext(xmax, margin) + EXT)
-    ax.set_ylim(min(b_init - 2, shrink(ymin, margin)), ext(ymax, margin))
+    ax.set_ylim(min(b_init, shrink(ymin, margin)), ext(ymax, margin))
 
     if args.log:
         ax.set_xscale('log')

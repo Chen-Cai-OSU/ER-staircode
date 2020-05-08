@@ -102,7 +102,7 @@ class staircase():
 
     def _rep_line(self, l):
         a, b = l
-        return 'y={:4f}*x+{:4f}'.format(a, b)
+        return 'y={:2f}*x+{:2f}'.format(a, b)
 
     def _rep_pt(self, pt):
         return f'({pf(pt[0], 2)}, {pf(pt[1], 2)})'
@@ -167,7 +167,7 @@ class staircase():
         if self._check_direction(seg) == 'hor':
             if a * x1 + b <= y1 and a * x2 + b >= y2:
                 intersect_pt = ((y1-b)/float(a), y1)
-                if verbose > 0: print(f'line {self._rep_line(l)} instersects with horizonal seg {self._rep_seg(seg)} at {self._rep_pt(intersect_pt)}. data is {data}')
+                if verbose > 0: print(f'line {self._rep_line(l)} instersects with horizonal seg {self._rep_seg(seg)} at {self._rep_pt(intersect_pt)}.')
                 return True
             else:
                 if a * x1 + b > y1 and a * x2 + b > y2:
@@ -180,7 +180,7 @@ class staircase():
         else: # 'ver'
             if a * x1 + b >= y1 and a * x2 + b <= y2:
                 intersect_pt = (x1, a*x1+b)
-                if verbose > 0: print(f'line {self._rep_line(l)} instersects with vertical seg {self._rep_seg(seg)} at {self._rep_pt(intersect_pt)}. data is {data}')
+                if verbose > 0: print(f'line {self._rep_line(l)} instersects with vertical seg {self._rep_seg(seg)} at {self._rep_pt(intersect_pt)}.')
                 return True
             else:
                 if a * x1 + b > y1 and a * x2 + b > y2:
@@ -213,7 +213,7 @@ class staircase():
         for i in range(n-1):
             seg1, seg2 = segs[i], segs[i+1]
             self._check_twosegs(seg1, seg2)
-        print('pass segs order test')
+        # print('pass segs order test')
 
     def _find_default_intersect(self, l):
         """ test intersection with two default segs with line l """
@@ -231,7 +231,7 @@ class staircase():
         for seg in segs:
             if self._check_intersect(l, seg, verbose=1) == True:
                 print(f'Intersect at seg index {segs.index(seg)} {self._rep_seg(seg)}')
-        print(f'line search takes {time()-t0}')
+        # print(f'line search takes {time()-t0}')
 
     def find_intersect_binary(self, l, aug = False, verbose = 0, check = True):
         """ binary search """
@@ -262,7 +262,7 @@ class staircase():
             if verbose: print(f'left is {left} mid is {mid} right is {right}')
 
         # print(f'Intersect at seg index {mid} {self._rep_seg(segs[mid])}')
-        print('binary search takes {:.3f}.'.format(time() - t0))
+        # print('binary search takes {:.3f}.'.format(time() - t0))
 
     def plot_segs(self, static = False):
         # https://stackoverflow.com/questions/21352580/matplotlib-plotting-numerous-disconnected-line-segments-with-different-colors
