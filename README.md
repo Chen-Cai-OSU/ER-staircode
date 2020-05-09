@@ -1,4 +1,4 @@
-# Elder-rule-staircodes for augmented metric spaces (SOCG 2020)
+# Elder-rule-staircodes for augmented metric spaces
 
 **Chen Cai, Woojin Kim, Facundo Memoli, Yusu Wang**
 
