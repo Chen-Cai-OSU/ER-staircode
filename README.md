@@ -40,3 +40,15 @@ Also see the short tutorial (tutorial.ipynb) on how to use the software for your
 
 ### Contact 
 * If you have any questions, submit a issue on github or contact me via cai.507@osu.edu
+
+### Cite
+Please consider citing our paper if you are using the code.
+```
+@inproceedings{cai2020elder,
+  title={Elder-Rule-Staircodes for Augmented Metric Spaces},
+  author={Cai, Chen and Kim, Woojin and M{\'e}moli, Facundo and Wang, Yusu},
+  booktitle={36th International Symposium on Computational Geometry (SoCG 2020)},
+  year={2020},
+  organization={Schloss Dagstuhl-Leibniz-Zentrum f{\"u}r Informatik}
+}
+```
