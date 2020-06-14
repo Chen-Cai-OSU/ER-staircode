@@ -7,7 +7,7 @@ from functools import cmp_to_key
 from time import time
 
 np.random.seed(42)
-EXT = 10
+EXT = 3
 
 def graph(formula, x_range):
     x = np.array(x_range)
@@ -56,7 +56,7 @@ class staircase():
                 filter_juncs.append(pt1)
                 filter_juncs.append(p)
 
-        last_pt = (filter_juncs[-1][0] + self.exd, filter_juncs[-1][1])
+        last_pt = (max(filter_juncs[-1][0] + self.exd, 10), filter_juncs[-1][1]) # small hack to make the gui looks better
         filter_juncs.append(last_pt)
         if verbose>0: print(filter_juncs)
         n = len(filter_juncs)
@@ -73,7 +73,7 @@ class staircase():
             self.add_augseg(aug_seg)
 
         left_most_seg = ((juncs[0][0], 0),juncs[0])
-        bottom_seg = ((juncs[0][0], 0), (self.exd, 0))
+        bottom_seg = ((juncs[0][0], 0), (10, 0)) # bottom_seg = ((juncs[0][0], 0), ) # small hack to make the gui looks better
         self.default_segs = [left_most_seg, bottom_seg] # check this two segs seprately
 
         # self.addseg(left_most_seg) # add leftmost seg
