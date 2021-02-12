@@ -6,8 +6,10 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pprint import pprint
 
-def write_pts_for_viz(pts, color, name = 'moon'):
+
+def write_pts_for_viz(pts, color, name='moon'):
     # write points for interactive viz
     """
     :param pts: shape of (n, d)
@@ -34,6 +36,7 @@ def write_pts_for_viz(pts, color, name = 'moon'):
     df.to_csv(csv_file, index=False)
     print(f'Save to {csv_file}...')
 
+
 def get_name_for_csv(name='moon'):
     if name == 'moon':
         csv_file = './viz/RuiLi/data/tsne.csv'
@@ -45,7 +48,8 @@ def get_name_for_csv(name='moon'):
         raise Exception(f'No such {name}')
     return csv_file
 
-def get_left_epsilon(stair, sigma = -1):
+
+def get_left_epsilon(stair, sigma=-1):
     """
     :param stair: is a list of tupe of form (sigma, epsilon)
     :return: from all left(smaller) epsion, get the the rightmost(largest)
@@ -54,16 +58,17 @@ def get_left_epsilon(stair, sigma = -1):
 
     if len(stair) == 0:
         return None, -1
-    else: # todo can be improved
+    else:  # todo can be improved
         eps, sigs = [], []
         for (sig, ep) in stair:
             if sig < sigma:
                 eps.append(ep)
                 sigs.append(sig)
-        if len(eps) == 0: # all points are on the right
+        if len(eps) == 0:  # all points are on the right
             return None, -1
         else:
             return sigs[eps.index(min(eps))], min(eps)
+
 
 def get_epsilon(stair, sigma):
     """
@@ -72,7 +77,7 @@ def get_epsilon(stair, sigma):
     :param stair: a list of tuples
     :return:
     """
-    stair.sort(key=lambda x:x[0])
+    stair.sort(key=lambda x: x[0])
     n = len(stair)
     epsilon = -1e5
     for i in range(n):
@@ -80,6 +85,7 @@ def get_epsilon(stair, sigma):
             epsilon = stair[i][1]
 
     return epsilon
+
 
 def get_previous_epsilon(stair):
     assert type(stair) == list
@@ -89,24 +95,25 @@ def get_previous_epsilon(stair):
     else:
         return stair[-1][1]
 
-def viz_stair(stair, show=False, title=None, save = False, **kwargs):
+
+def viz_stair(stair, show=False, title=None, save=False, **kwargs):
     """
     :param stair: a list of tuple of form (sigma, epsilon)
     :param plot: if True, convert to new_stair and visualize
     :return: if plot False, return new stair
     """
-    if stair == []: return [(0,0)]
+    if stair == []: return [(0, 0)]
     for i in range(1, len(stair)):
-        assert stair[i][0] >= stair[i-1][0]
+        assert stair[i][0] >= stair[i - 1][0]
         assert stair[i][1] <= stair[i][1]
     new_stair = []
 
-    new_stair.append((stair[0][0], 0)) # the fist point is  (f(x), 0)
+    new_stair.append((stair[0][0], 0))  # the fist point is  (f(x), 0)
     new_stair.append(stair[0])
-    for i in range( len(stair)):
+    for i in range(len(stair)):
         new_stair.append(stair[i])
-        if i+1 < len(stair) and stair[i+1][1] < stair[i][1]:
-            new_pt = (stair[i+1][0], stair[i][1])
+        if i + 1 < len(stair) and stair[i + 1][1] < stair[i][1]:
+            new_pt = (stair[i + 1][0], stair[i][1])
             new_stair.append(new_pt)
 
     new_stair = np.array(new_stair)
@@ -118,10 +125,12 @@ def viz_stair(stair, show=False, title=None, save = False, **kwargs):
         file = os.path.join(kwargs['dir'], kwargs['f'])
         print(f'save at {file}')
         plt.savefig(file)
-    if show: plt.show()
+    if show:
+        plt.show()
 
     else:
         return new_stair
+
 
 def viz_stairs(stairs):
     # stairs = []
@@ -134,9 +143,10 @@ def viz_stairs(stairs):
         stairs[i] = np.array(viz_stair(stairs[i], plot=False))
 
     for i in range(len(stairs)):
-        plt.plot(stairs[i][:,0], stairs[i][:,1], 'b-')
+        plt.plot(stairs[i][:, 0], stairs[i][:, 1], 'b-')
 
     plt.show()
+
 
 def density(data):
     """
@@ -148,6 +158,7 @@ def density(data):
     kde = KernelDensity(kernel='gaussian', bandwidth=0.5).fit(data)
     return kde.score_samples(data)
 
+
 def expand_list(l):
     """
     :param l: a list of lists
@@ -157,6 +168,7 @@ def expand_list(l):
     for lis in l:
         res += lis
     return res
+
 
 def I_x(f, distm, x, sigma):
     """
@@ -197,9 +209,9 @@ def I_x(f, distm, x, sigma):
     length_dict = {}
 
     # todo try to use single_path_length
-    for k, v in path_dict.items(): # v is like [10, 7, 0]
+    for k, v in path_dict.items():  # v is like [10, 7, 0]
         if len(v) > 1:
-            lenlist = [mst[v[i]][v[i+1]]['weight'] for i in range(len(v)-1)]
+            lenlist = [mst[v[i]][v[i + 1]]['weight'] for i in range(len(v) - 1)]
         else:
             lenlist = [1e10]
         length_dict[k] = lenlist
@@ -208,8 +220,9 @@ def I_x(f, distm, x, sigma):
 
     return sigma, epsion
 
-def viz_stair_(stair, show = True, print_=False, flip_y = False, hide_tickers = False,
-               text = False, num = True, save = False, **kwargs):
+
+def viz_stair_(stair, show=True, print_=False, flip_y=False, hide_tickers=False,
+               text=False, num=True, save=False, **kwargs):
     """
     :param stair: a list of tuples [(1, 2), (3, 1.7), (4, 1.5), (10, 0.9)]
     :param show: flag
@@ -218,7 +231,7 @@ def viz_stair_(stair, show = True, print_=False, flip_y = False, hide_tickers = 
     :return:
     """
     if stair == []: return
-    x = np.array([p[0] for p in stair]) # np.linspace(0, 5, 10)
+    x = np.array([p[0] for p in stair])  # np.linspace(0, 5, 10)
     y = np.array([p[1] for p in stair])
     if flip_y: y = -y
 
@@ -271,7 +284,7 @@ def viz_stair_(stair, show = True, print_=False, flip_y = False, hide_tickers = 
     return junc_pts
 
 
-def viz_stairs_(stairs, title=None, flip = False, choices = None, save = False, hide_tickers = True, **kwargs):
+def viz_stairs_(stairs, title=None, flip=False, choices=None, save=False, hide_tickers=True, **kwargs):
     """
     :param stairs: a list of list of tuples
     :param title:
@@ -304,30 +317,30 @@ def viz_stairs_(stairs, title=None, flip = False, choices = None, save = False, 
             flip_y = True if color == flip_color else False
 
         if choices == None:
-            viz_stair_(stair, show=False, color=color, flip_y = flip_y, alpha=alpha, yscale=yscale, save=save, title=title)
+            viz_stair_(stair, show=False, color=color, flip_y=flip_y, alpha=alpha, yscale=yscale, save=save,
+                       title=title)
             if title is not None: plt.title(title)
 
-        elif i in choices: # only visualize a subset of stairs
-            num=kwargs.get('num', False)
+        elif i in choices:  # only visualize a subset of stairs
+            num = kwargs.get('num', False)
             title = str(i) if num == True else None
             junc = viz_stair_(stair, show=False, color=color, flip_y=flip_y, alpha=alpha, yscale=yscale,
-                       hide_tickers=hide_tickers, save=save, ind_title=str(i), name=kwargs.get('name', 'None'))
+                              hide_tickers=hide_tickers, save=save, ind_title=str(i), name=kwargs.get('name', 'None'))
             return junc
             # print(f'plot a single stair {i}')
 
 
-
-def south_west_check(stair, x = 1, y = 1):
+def south_west_check(stair, x=1, y=1):
     # find all points that is south-west to point (x, y) in the stair
     n = len(stair)
-    res = [stair[i] for i in range(n) if (stair[i][0] <= x and stair[i][1] <=y)]
-    if len(res) > 1: # only contains junction point itself
+    res = [stair[i] for i in range(n) if (stair[i][0] <= x and stair[i][1] <= y)]
+    if len(res) > 1:  # only contains junction point itself
         return False
     else:
         return True
 
 
-def bigrad1(stair, print_flag = False, bi2_flag = False):
+def bigrad1(stair, print_flag=False, bi2_flag=False):
     junc = []
     for (sig, eps) in stair:
         if south_west_check(stair, x=sig, y=eps):
@@ -344,9 +357,10 @@ def bigrad1(stair, print_flag = False, bi2_flag = False):
         print(f'Now print out Bigraded-2')
         bi2 = bi12bi2(junc)
         print(bi2)
-        print('-'*20)
+        print('-' * 20)
 
     return junc_x, junc_y, junc
+
 
 def bi12bi2(bi1):
     # bi1 is an array of size (n, 2)
@@ -357,11 +371,10 @@ def bi12bi2(bi1):
         return None
     else:
         res = []
-        for i in range(n-1):
-            new_coor = [bi1[i+1][0], bi1[i][1]]
+        for i in range(n - 1):
+            new_coor = [bi1[i + 1][0], bi1[i][1]]
             res.append(new_coor)
         return np.array(res)
-
 
 
 if __name__ == '__main__':
@@ -379,36 +392,35 @@ if __name__ == '__main__':
     for sigma in sigmas:
         sig, eps = I_x(f, distm, x, sigma)
         stair.append((sig, eps))
-
+    pprint(stair)
     viz_stair_(stair)
 
     # viz_stair(stair, plot=True, show=True)
 
-    sys.exit()
+    exit()
 
     viz_stairs(None)
     sys.exit()
-    stair = [(1,2),(3,1.7), (4,1.5),(10,0.9)]
-    stair_2 = [(1,3.1),(3,2.3), (4.7,1),(11,0.8)]
+    stair = [(1, 2), (3, 1.7), (4, 1.5), (10, 0.9)]
+    stair_2 = [(1, 3.1), (3, 2.3), (4.7, 1), (11, 0.8)]
 
     stair = viz_stair(stair, plot=False)
     print(stair)
     # stair_2 = viz_stair(stair_2, plot=False)
-    plt.plot(np.array(stair)[:,0], np.array(stair)[:,1], 'b-')
+    plt.plot(np.array(stair)[:, 0], np.array(stair)[:, 1], 'b-')
     # plt.plot(np.array(stair_2)[:, 0], np.array(stair_2)[:, 1], 'r-')
 
     plt.show()
     sys.exit()
 
     sig, epsilon = get_left_epsilon(stair, sigma=3.5)
-    print(sig) # 3
+    print(sig)  # 3
     assert epsilon == 1.7
 
     sigma, epsilon = get_left_epsilon(stair, sigma=4.5)
-    print(sigma) # 4
+    print(sigma)  # 4
     assert epsilon == 1.5
 
     sigma, epsilon = get_left_epsilon(stair, sigma=10.5)
-    print(sigma)# 10
+    print(sigma)  # 10
     assert epsilon == 0.9
-

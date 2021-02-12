@@ -1,7 +1,7 @@
 # Elder-rule-staircodes for augmented metric spaces
 
 **Chen Cai, Woojin Kim, Facundo Memoli, Yusu Wang**
-
+![](./fig.png)
 ![](./abstract.png)
 
 ### Install
@@ -38,8 +38,15 @@ python ER/gui.py
 ### Tutorial
 Also see the short tutorial (tutorial.ipynb) on how to use the software for your own data.
 
+### Figure
+run
+``
+python ER/fig.py
+``
+to generate the figure above. 
+
 ### Contact 
-* If you have any questions, submit a issue on github or contact me via cai.507@osu.edu
+* If you have any questions, submit a issue on github or contact me via c1cai@ucsd.edu
 
 ### Cite
 Please consider citing our paper if you are using the code.

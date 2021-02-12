@@ -9,7 +9,7 @@ from scipy.spatial.distance import pdist, squareform
 from sklearn import datasets
 
 
-def viz_pd(pts, show=False, color=None, annotate=None, inter=False):
+def viz_pd(pts, show=False, color=None, annotate=None, inter=False, fname=None, colorbar=False):
     """
     :param pts: np.array of shape (n, 2)
     :param show:
@@ -22,17 +22,29 @@ def viz_pd(pts, show=False, color=None, annotate=None, inter=False):
 
     cmap = sns.cubehelix_palette(as_cmap=True)
     if color is None: color = np.random.rand(1, pts.shape[0])
+    if isinstance(color, list): color = np.array(color).reshape(1, len(color))
     color = color.reshape((pts.shape[0],))
 
-    f, ax = plt.subplots()
-    points = ax.scatter(x=pts[:, 0], y=pts[:, 1], s=5, c=list(color))
-    f.colorbar(points)
+    f, ax = plt.subplots(figsize=(5.5,5))
+    sc = ax.scatter(x=pts[:, 0], y=pts[:, 1], s=5, c=color, cmap=cmap)
+
+
+    if colorbar:
+        plt.colorbar(sc)
+        # plt.colorbar(sc)
+        # f.colorbar(cmap)
+        # f.colorbar(cmap)
+        # if len(set(color.tolist()[0]))>5:
+        #     f.colorbar(points)
 
     if annotate is not None:
         for idx in annotate:
             ax.text(pts[idx, 0] + 0.1, pts[idx, 1] + 0.1, idx, fontsize=9)
 
     if show: plt.show()
+    if fname is not None:
+        f.savefig(fname, bbox_inches='tight')
+    plt.close()
 
 
 def pd_from_cycle(n=100, center=(0, 0)):
@@ -173,13 +185,13 @@ def woojin2(switch=False):
 def woojin3():
     # example for check with I_x with revet
     x1 = (0, 0)
-    x2 = (4, 3)
-    x3 = (0, 3)
+    x2 = (0, 3)
+    x3 = (4, 3)
     x4 = (2.5, 3)
     pts = [x1, x2, x3, x4]
 
     data = np.array(pts)
-    f = np.array([0, 1, 2, 3]).reshape(len(pts), 1)
+    f = np.array([1.0, 2.0, 3.0, 4.0]).reshape(len(pts), 1)
     color = ['b'] * 4
 
     distm = pdist(data)
@@ -187,6 +199,23 @@ def woojin3():
 
     return data, color, distm, f
 
+def woojin4():
+    # example to check for degenerate case
+    x1 = (0, 0)
+    x2 = (0, 3)
+    x3 = (4, 3)
+    x4 = (2.5, 3)
+    x5 = (20, 0)
+    x6 = (20, 4)
+    pts = [x1, x2,x3,x4,x5,x6]
+
+    data = np.array(pts)
+    f = np.array([1.0, 2.0, 3.0, 4.0, 1.0, 4.0]).reshape(len(pts), 1)
+    color = ['b'] * 6
+
+    distm = pdist(data)
+    distm = squareform(distm)
+    return data, color, distm, f
 
 def pts_on_square(add_noise=False, n_noise=5):
     pts = []
@@ -203,9 +232,11 @@ def pts_on_square(add_noise=False, n_noise=5):
 
 def color_map(n):
     if n == 0: return 'b'
-    if n == 1: return 'r'
-    if n == -1: return 'y'
-    if n == 2: return 'g'
+    elif n == 1: return 'r'
+    elif n == -1: return 'y'
+    elif n == 2: return 'g'
+    elif n==3: return 'grey'
+    else: raise NotImplementedError
 
 
 def toy_dataset(n_sample=200, name='blob', seed=42, pd=False, metric='euclidean', scale=1, **kwargs):
@@ -227,6 +258,16 @@ def toy_dataset(n_sample=200, name='blob', seed=42, pd=False, metric='euclidean'
         pts, color = datasets.make_moons(n_samples=n_sample, noise=.05, random_state=seed)
     elif name == 'blob':
         pts, color = datasets.make_blobs(n_samples=n_sample, random_state=seed, n_features=kwargs.get('n_features', 2))
+    elif 'noisy_blob' in name:
+        pts, color = datasets.make_blobs(n_samples=n_sample, random_state=seed, n_features=kwargs.get('n_features', 2))
+        if name == 'noisy_blob':
+            n_noise = 10
+        elif name == 'noisy_blob2':
+            n_noise = 20
+        noisy_pts, noisy_color = uniform_noise(xrange=(min(pts[:,0]), max(pts[:,0])), yrange=(min(pts[:,1]), max(pts[:,1])), size=n_noise, seed=seed)
+        pts = np.concatenate((pts, noisy_pts), axis=0)
+        color = np.concatenate((color, 3*np.ones(len(noisy_color))))
+
     elif name == 'aniso':
         X, color = datasets.make_blobs(n_samples=n_sample, random_state=seed)
         transformation = [[0.60834549, -0.63667341], [-0.40887718, 0.85253229]]
@@ -240,8 +281,6 @@ def toy_dataset(n_sample=200, name='blob', seed=42, pd=False, metric='euclidean'
     elif name == 'test':
         pts = [[-3, 3], [0, 0], [-4.5, 1.5], [1, 1], [0, -4]]
         return np.array(pts), None, None
-
-
     else:
         raise Exception(f'No dataset {name}')
 
@@ -255,7 +294,7 @@ def toy_dataset(n_sample=200, name='blob', seed=42, pd=False, metric='euclidean'
     return np.array(pts), color, distm
 
 
-def uniform_noise(xrange=(0, 1), yrange=(0, 1), size=100):
+def uniform_noise(xrange=(0, 1), yrange=(0, 1), size=100, seed=1):
     """
     uniform 2d noise
     :param xrange:
@@ -263,6 +302,7 @@ def uniform_noise(xrange=(0, 1), yrange=(0, 1), size=100):
     :param size: num of noisy points
     :return:
     """
+    np.random.seed(seed)
     x = np.random.uniform(low=xrange[0], high=xrange[1], size=(size, 1))
     y = np.random.uniform(low=yrange[0], high=yrange[1], size=(size, 1))
     pts = np.concatenate((x, y), axis=1)
@@ -297,8 +337,11 @@ def non_uniform(n=100, noise=False, d=2):
 
 
 if __name__ == '__main__':
-    pts, _ = uniform_noise(size=1000)
-    viz_pd(pts, show=True)
+    data, color, distm, f = woojin4()
+    print(distm)
+    exit()
+    pts, _ = uniform_noise(size=10)
+    print(np.mean(pts))
     sys.exit()
 
     pts = pts_on_square(add_noise=True)
